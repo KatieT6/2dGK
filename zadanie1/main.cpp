@@ -3,24 +3,29 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
-#include "Circle.h"
+#include "lib/Circle.h"
+#include "lib/MapLoader.h"
 
-const int SCREEN_WIDTH = 1080;
-const int SCREEN_HEIGHT = 680;
+const int SCREEN_WIDTH = 1088;
+const int SCREEN_HEIGHT = 640;
 int mouseX, mouseY;
 
 
 SDL_Rect* fillRect1;
 
-SDL_Surface* loadSurface(std::string path);
-
-SDL_Texture* loadTextureFromTheSurface(std::string path);
+SDL_Surface* gScreenSurface = NULL;
 
 SDL_Window* gWindow = NULL;
 
 SDL_Renderer* gRenderer = NULL;
 
-SDL_Surface* gScreenSurface = NULL;
+SDL_Texture* grassTexture = NULL;
+
+SDL_Texture* skyTexture = NULL;
+
+SDL_Texture* wallTexture = NULL;
+
+
 
 bool init();
 
@@ -60,6 +65,13 @@ int main(int argc, char* args[])
 			100,
 			100
 		};
+		std::vector<SDL_Texture*> textures;
+		grassTexture = loadTextureFromTheSurface("res/textures/grass.png", gRenderer);
+		skyTexture = loadTextureFromTheSurface("res/textures/sky.png", gRenderer);
+		wallTexture = loadTextureFromTheSurface("res/textures/wall.png", gRenderer);
+		textures.push_back(grassTexture);
+		textures.push_back(skyTexture);
+		textures.push_back(wallTexture);
 
 		//While application is running
 		while (!quit)
@@ -132,13 +144,25 @@ int main(int argc, char* args[])
 			{
 				circle1.calculateNewPosition(velocityOfCircle * deltaX, velocityOfCircle * deltaY);
 			}
+			
 
-			// Define a constant speed
+			//elementsOfMap = loadElementInfoFromFile("res/maps/legend.txt");
+			std::vector<std::string> levelMap = loadFromFile("res/maps/map1.txt");
 
-
+		
 			//Clear screen
-			SDL_SetRenderDrawColor(gRenderer, 0xAA, 0xAA, 0xFF, 0xFF);
+			SDL_SetRenderDrawColor(gRenderer, 0x8B, 0xAC, 0xB7, 0xFF);
 			SDL_RenderClear(gRenderer);
+
+			int numberOfColumns = SCREEN_WIDTH / 64;
+			int numberOfRows = SCREEN_HEIGHT / 64;
+
+			for (int i = 0; i < numberOfRows; i++) {
+				std::string line = levelMap.at(i);
+				for (int j = 0; j < numberOfColumns; j++) {
+					drawElement(j * 64, i * 64, line.at(j), textures, gRenderer);
+				}
+			}
 
 			// Draw semi-transparent circle
 			circle1.drawCircle(gRenderer, alpha);
@@ -214,31 +238,7 @@ bool init()
 	return success;
 }
 
-SDL_Texture* loadTextureFromTheSurface(std::string path) {
-	//The final texture
-	SDL_Texture* newTexture = NULL;
 
-	//Load image at specified path
-	SDL_Surface* loadedSurface = IMG_Load(path.c_str());
-	if (loadedSurface == NULL)
-	{
-		printf("Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError());
-	}
-	else
-	{
-		//Create texture from surface pixels
-		newTexture = SDL_CreateTextureFromSurface(gRenderer, loadedSurface);
-		if (newTexture == NULL)
-		{
-			printf("Unable to create texture from %s! SDL Error: %s\n", path.c_str(), SDL_GetError());
-		}
-
-		//Get rid of old loaded surface
-		SDL_FreeSurface(loadedSurface);
-	}
-
-	return newTexture;
-}
 
 
 void close() {
@@ -251,29 +251,3 @@ void close() {
 	SDL_Quit();
 }
 
-SDL_Surface* loadSurface(std::string path)
-{
-	//The final optimized image
-	SDL_Surface* optimizedSurface = NULL;
-
-	//Load image at specified path
-	SDL_Surface* loadedSurface = IMG_Load(path.c_str());
-	if (loadedSurface == NULL)
-	{
-		printf("Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError());
-	}
-	else
-	{
-		//Convert surface to screen format
-		optimizedSurface = SDL_ConvertSurface(loadedSurface, gScreenSurface->format, 0);
-		if (optimizedSurface == NULL)
-		{
-			printf("Unable to optimize image %s! SDL Error: %s\n", path.c_str(), SDL_GetError());
-		}
-
-		//Get rid of old loaded surface
-		SDL_FreeSurface(loadedSurface);
-	}
-
-	return optimizedSurface;
-}

@@ -1,0 +1,3 @@
+rectangle 64,64 grass.png
+rectangle 64,64 sky.png
+rectangle 64,64 wall.png
