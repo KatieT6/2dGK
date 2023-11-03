@@ -2,21 +2,15 @@
 #include <SDL_image.h>
 #include <stdio.h>
 #include <string>
+#include <vector>
+#include "Circle.h"
 
 const int SCREEN_WIDTH = 1080;
 const int SCREEN_HEIGHT = 680;
-
-enum Textures
-{
-	TEXTURE_CLOUD,
-	TEXTURE_BRICK,
-	TEXTURE_TOTAL
-};
-
-SDL_Rect fillRect1;
-SDL_Rect fillRect2;
+int mouseX, mouseY;
 
 
+SDL_Rect* fillRect1;
 
 SDL_Surface* loadSurface(std::string path);
 
@@ -26,21 +20,20 @@ SDL_Window* gWindow = NULL;
 
 SDL_Renderer* gRenderer = NULL;
 
-SDL_Texture* Textures[TEXTURE_TOTAL];
-
 SDL_Surface* gScreenSurface = NULL;
 
 bool init();
 
-bool loadTextures();
+//bool loadTextures();
 
 void close();
+
+float smoothingMotion(float targetSpeed, float smooth, float velocity);
 
 
 
 int main(int argc, char* args[])
 {
-	int fillRect1X = SCREEN_WIDTH / 8; // Initial X position
 	//Start up SDL and create window
 	if (!init())
 	{
@@ -48,75 +41,128 @@ int main(int argc, char* args[])
 	}
 	else
 	{
-		//Load media
-		if (!loadTextures())
+		//Main loop flag
+		bool quit = false;
+
+		//Event handler
+		SDL_Event e;
+		Uint8 alpha = 128;
+
+		Circle circle1 = Circle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 50);
+		float smooth = 0.1;
+		float velocityOfCircle = 0;
+
+		float velocityOfRect = 1;
+		fillRect1 = new SDL_Rect
 		{
-			printf("Failed to load media!\n");
-		}
-		else
+			50,
+			50,
+			100,
+			100
+		};
+
+		//While application is running
+		while (!quit)
 		{
-			//Main loop flag
-			bool quit = false;
 
-			//Event handler
-			SDL_Event e;
-
-			int fillRect1X = 100;
-			float velocity = 1;
-
-			//While application is running
-			while (!quit)
+			//Handle events on queue
+			while (SDL_PollEvent(&e) != 0)
 			{
-				//Handle events on queue
-				while (SDL_PollEvent(&e) != 0)
+				//User requests quit
+				if (e.type == SDL_QUIT)
 				{
-					//User requests quit
-					if (e.type == SDL_QUIT)
-					{
-						quit = true;
-					}
+					quit = true;
 				}
-				//Clear screen
-				SDL_SetRenderDrawColor(gRenderer, 0xAA, 0xAA, 0xFF, 0xFF);
-				SDL_RenderClear(gRenderer);
-
-				fillRect1 = {
-					fillRect1X,
-					SCREEN_HEIGHT / 8,
-					SCREEN_WIDTH / 4,
-					SCREEN_HEIGHT / 4 };
-				//put the textures on rect
-				SDL_RenderCopy(gRenderer, Textures[TEXTURE_CLOUD], NULL, &fillRect1);
-
-				fillRect2 = {
-					SCREEN_WIDTH / 2,
-					SCREEN_HEIGHT / 4,
-					SCREEN_WIDTH / 4,
-					SCREEN_HEIGHT / 2 };
-				SDL_RenderCopy(gRenderer, Textures[TEXTURE_BRICK], NULL, &fillRect2);
-
-				if (fillRect1X > SCREEN_WIDTH - 100)
+				else if (e.type == SDL_MOUSEMOTION)
 				{
-					fillRect1X = 0;
+					mouseX = e.motion.x;
+					mouseY = e.motion.y;
+					printf("We got a motion event.\n");
+					printf("Current mouse position is: (%d, %d)\n", e.motion.x, e.motion.y);
 				}
-				if (fillRect1X < 100)
-				{
-					fillRect1X = 100;
-				}
-				fillRect1X += velocity;
 
-				//Update screen
-				SDL_RenderPresent(gRenderer);
+			}
+
+			// Handle different combinations of key presses
+			const Uint8* currentKeyStates = SDL_GetKeyboardState(NULL);
+
+			if (currentKeyStates[SDL_SCANCODE_UP])
+			{
+				fillRect1->y -= velocityOfRect;
+				printf("We got a motion event.\n UP buton pressed");
+			}
+
+			if (currentKeyStates[SDL_SCANCODE_DOWN])
+			{
+				fillRect1->y += velocityOfRect;
+				printf("We got a motion event.\n DOWN buton pressed");
+
+			}
+
+			if (currentKeyStates[SDL_SCANCODE_LEFT])
+			{
+				fillRect1->x -= velocityOfRect;
+				printf("We got a motion event.\n LEFT buton pressed");
+
+			}
+
+			if (currentKeyStates[SDL_SCANCODE_RIGHT])
+			{
+				fillRect1->x += velocityOfRect;
+				printf("We got a motion event.\n RIGHT buton pressed");
+
 			}
 
 
+
+			float deltaX = mouseX - circle1.getCenterX();
+			float deltaY = mouseY - circle1.getCenterY();
+
+			float distance = sqrt(deltaX * deltaX + deltaY * deltaY);
+
+			// Define a constant speed
+			float speed = 1; // Adjust as needed
+
+			// Apply smoothing to the velocity
+			float targetVelocity = distance > 0 ? speed / distance : 0;
+			velocityOfCircle = smoothingMotion(targetVelocity, smooth, velocityOfCircle);
+
+			// Calculate the new position based on linear interpolation
+			if (distance > 0)
+			{
+				circle1.calculateNewPosition(velocityOfCircle * deltaX, velocityOfCircle * deltaY);
+			}
+
+			// Define a constant speed
+
+
+			//Clear screen
+			SDL_SetRenderDrawColor(gRenderer, 0xAA, 0xAA, 0xFF, 0xFF);
+			SDL_RenderClear(gRenderer);
+
+			// Draw semi-transparent circle
+			circle1.drawCircle(gRenderer, alpha);
+
+			// Draw rectangles
+			SDL_SetRenderDrawColor(gRenderer, 0xFF, 0x00, 0x00, 0xFF);
+			SDL_RenderFillRect(gRenderer, fillRect1);
+
+			//Update screen
+			SDL_RenderPresent(gRenderer);
 		}
+
+
+		//}
 	}
 
 	//Free resources and close SDL
 	close();
 
 	return 0;
+}
+
+float smoothingMotion(float targetSpeed, float smooth, float velocity) {
+	return targetSpeed * (1 - smooth) + velocity * smooth;
 }
 
 bool init()
@@ -168,30 +214,6 @@ bool init()
 	return success;
 }
 
-bool loadTextures()
-{
-	//Loading success flag
-	bool success = true;
-
-	//Load TEXTURES
-	Textures[TEXTURE_CLOUD] = loadTextureFromTheSurface("res/cloud.png");
-	if (Textures[TEXTURE_CLOUD] == NULL)
-	{
-		printf("Failed to load default texture!\n");
-		success = false;
-	}
-
-	//Load up surface
-	Textures[TEXTURE_BRICK] = loadTextureFromTheSurface("res/brick.png");
-	if (Textures[TEXTURE_BRICK] == NULL)
-	{
-		printf("Failed to load up texture!\n");
-		success = false;
-	}
-
-	return success;
-}
-
 SDL_Texture* loadTextureFromTheSurface(std::string path) {
 	//The final texture
 	SDL_Texture* newTexture = NULL;
@@ -220,12 +242,6 @@ SDL_Texture* loadTextureFromTheSurface(std::string path) {
 
 
 void close() {
-	for (int i = 0; i < TEXTURE_TOTAL; i++)
-	{
-		SDL_DestroyTexture(Textures[i]);
-		Textures[i] = NULL;
-	}
-
 	SDL_DestroyRenderer(gRenderer);
 	SDL_DestroyWindow(gWindow);
 	gWindow = NULL;
