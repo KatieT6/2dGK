@@ -87,5 +87,3 @@ SDL_Surface* loadSurface(std::string path, SDL_Surface* gScreenSurface)
 
 	return optimizedSurface;
 }
-
-

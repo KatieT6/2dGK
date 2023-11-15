@@ -8,16 +8,23 @@
 
 const int SCREEN_WIDTH = 1088;
 const int SCREEN_HEIGHT = 640;
+
+const int MAP_WIDTH = 1664;
+const int MAP_HEIGHT = 1216;
+
 int mouseX, mouseY;
+int maxX, maxY;
 
 
-SDL_Rect* fillRect1;
+SDL_Rect* fillRect1, *camera;
 
 SDL_Surface* gScreenSurface = NULL;
 
 SDL_Window* gWindow = NULL;
 
 SDL_Renderer* gRenderer = NULL;
+
+SDL_Texture* playerTexture = NULL;
 
 SDL_Texture* grassTexture = NULL;
 
@@ -28,6 +35,7 @@ SDL_Texture* wallTexture = NULL;
 
 
 bool init();
+void updatePlayerPosition(SDL_Rect* fillRect1, SDL_Rect* camera, float velocityOfRect);
 
 //bool loadTextures();
 
@@ -52,19 +60,33 @@ int main(int argc, char* args[])
 		//Event handler
 		SDL_Event e;
 		Uint8 alpha = 128;
+		Uint64 currentTime = 0;
+		Uint64 lastTime = 0;
+		Uint64 deltaTime = 0;
+		Uint64 desiredFrameTime = 17;
 
-		Circle circle1 = Circle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 50);
-		float smooth = 0.1;
-		float velocityOfCircle = 0;
+		camera = new SDL_Rect
+		{
+			SCREEN_WIDTH/2,
+			SCREEN_HEIGHT/2,
+			SCREEN_WIDTH,
+			SCREEN_HEIGHT
+		};
 
-		float velocityOfRect = 1;
+		float velocityOfRect = 2;
 		fillRect1 = new SDL_Rect
 		{
-			50,
-			50,
+			SCREEN_WIDTH / 2,
+			SCREEN_HEIGHT / 2,
 			100,
 			100
 		};
+
+		//Teksture for player
+		playerTexture = loadTextureFromTheSurface("res/textures/player.png", gRenderer);
+
+
+		//Tekstures from map loadres
 		std::vector<SDL_Texture*> textures;
 		grassTexture = loadTextureFromTheSurface("res/textures/grass.png", gRenderer);
 		skyTexture = loadTextureFromTheSurface("res/textures/sky.png", gRenderer);
@@ -76,6 +98,9 @@ int main(int argc, char* args[])
 		//While application is running
 		while (!quit)
 		{
+			lastTime = currentTime;
+			currentTime = SDL_GetPerformanceCounter();
+			deltaTime = (currentTime - lastTime) * 1000 / static_cast<float>(SDL_GetPerformanceFrequency());
 
 			//Handle events on queue
 			while (SDL_PollEvent(&e) != 0)
@@ -95,55 +120,7 @@ int main(int argc, char* args[])
 
 			}
 
-			// Handle different combinations of key presses
-			const Uint8* currentKeyStates = SDL_GetKeyboardState(NULL);
-
-			if (currentKeyStates[SDL_SCANCODE_UP])
-			{
-				fillRect1->y -= velocityOfRect;
-				printf("We got a motion event.\n UP buton pressed");
-			}
-
-			if (currentKeyStates[SDL_SCANCODE_DOWN])
-			{
-				fillRect1->y += velocityOfRect;
-				printf("We got a motion event.\n DOWN buton pressed");
-
-			}
-
-			if (currentKeyStates[SDL_SCANCODE_LEFT])
-			{
-				fillRect1->x -= velocityOfRect;
-				printf("We got a motion event.\n LEFT buton pressed");
-
-			}
-
-			if (currentKeyStates[SDL_SCANCODE_RIGHT])
-			{
-				fillRect1->x += velocityOfRect;
-				printf("We got a motion event.\n RIGHT buton pressed");
-
-			}
-
-
-
-			float deltaX = mouseX - circle1.getCenterX();
-			float deltaY = mouseY - circle1.getCenterY();
-
-			float distance = sqrt(deltaX * deltaX + deltaY * deltaY);
-
-			// Define a constant speed
-			float speed = 1; // Adjust as needed
-
-			// Apply smoothing to the velocity
-			float targetVelocity = distance > 0 ? speed / distance : 0;
-			velocityOfCircle = smoothingMotion(targetVelocity, smooth, velocityOfCircle);
-
-			// Calculate the new position based on linear interpolation
-			if (distance > 0)
-			{
-				circle1.calculateNewPosition(velocityOfCircle * deltaX, velocityOfCircle * deltaY);
-			}
+			updatePlayerPosition(fillRect1, camera, velocityOfRect);
 			
 
 			//elementsOfMap = loadElementInfoFromFile("res/maps/legend.txt");
@@ -157,22 +134,22 @@ int main(int argc, char* args[])
 			int numberOfColumns = SCREEN_WIDTH / 64;
 			int numberOfRows = SCREEN_HEIGHT / 64;
 
-			for (int i = 0; i < numberOfRows; i++) {
+			for (int i = 0; i < MAP_HEIGHT / 64; i++) {
 				std::string line = levelMap.at(i);
-				for (int j = 0; j < numberOfColumns; j++) {
-					drawElement(j * 64, i * 64, line.at(j), textures, gRenderer);
+				for (int j = 0; j < MAP_WIDTH / 64; j++) {
+					drawElement(j * 64 - camera->x, i * 64 - camera->y, line.at(j), textures, gRenderer);
 				}
 			}
 
-			// Draw semi-transparent circle
-			circle1.drawCircle(gRenderer, alpha);
-
-			// Draw rectangles
-			SDL_SetRenderDrawColor(gRenderer, 0xFF, 0x00, 0x00, 0xFF);
-			SDL_RenderFillRect(gRenderer, fillRect1);
+			SDL_RenderCopy(gRenderer, playerTexture, NULL, fillRect1);
 
 			//Update screen
 			SDL_RenderPresent(gRenderer);
+
+			if (desiredFrameTime > deltaTime)
+			{
+				SDL_Delay(desiredFrameTime - deltaTime);
+			}
 		}
 
 
@@ -187,6 +164,55 @@ int main(int argc, char* args[])
 
 float smoothingMotion(float targetSpeed, float smooth, float velocity) {
 	return targetSpeed * (1 - smooth) + velocity * smooth;
+}
+
+void updatePlayerPosition(SDL_Rect* fillRect1, SDL_Rect* camera, float velocityOfRect) {
+	const Uint8* currentKeyStates = SDL_GetKeyboardState(NULL);
+
+	if (currentKeyStates[SDL_SCANCODE_UP])
+	{
+		fillRect1->y -= velocityOfRect;
+		printf("We got a motion event.\n UP buton pressed");
+	}
+
+	if (currentKeyStates[SDL_SCANCODE_DOWN])
+	{
+		fillRect1->y += velocityOfRect;
+		printf("We got a motion event.\n DOWN buton pressed");
+
+	}
+
+	if (currentKeyStates[SDL_SCANCODE_LEFT])
+	{
+		fillRect1->x -= velocityOfRect;
+		printf("We got a motion event.\n LEFT buton pressed");
+
+	}
+
+	if (currentKeyStates[SDL_SCANCODE_RIGHT])
+	{
+		fillRect1->x += velocityOfRect;
+		printf("We got a motion event.\n RIGHT buton pressed");
+
+	}
+
+	// Update the camera to follow the player
+	camera->x = fillRect1->x - SCREEN_WIDTH / 2;
+	camera->y = fillRect1->y - SCREEN_HEIGHT / 2;
+
+	// Keep the camera in bounds
+	if (camera->x < 0) {
+		camera->x = 0;
+	}
+	if (camera->y < 0) {
+		camera->y = 0;
+	}
+	if (camera->x > MAP_WIDTH - SCREEN_WIDTH) {
+		camera->x = MAP_WIDTH - SCREEN_WIDTH;
+	}
+	if (camera->y > MAP_HEIGHT - SCREEN_HEIGHT) {
+		camera->y = MAP_HEIGHT - SCREEN_HEIGHT;
+	}
 }
 
 bool init()
