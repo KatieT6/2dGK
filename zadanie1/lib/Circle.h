@@ -2,37 +2,32 @@
 #include <string>
 #include <SDL.h>
 #include <vector>
+#include "Vector.h"
+
 
 class Circle
 {
 private:
-    float centerX;
-    float centerY;
+    VectorF2 velocity;
+    VectorI2 position;
     int radius;
 
+    void setPosition(VectorI2 pos);
 
-    // Setter for center x
-    void setCenterX(float x);
-
-    // Setter for center y
-    void setCenterY(float y);
-
-    // Setter for radius
-    void setRadius(int r);
+    void setVelocity(VectorF2 vel);
 
 public:
-    Circle(float x, float y, int r);
+    Circle(VectorI2 pos, VectorF2 vel, int r);
     void drawCircle(SDL_Renderer* renderer, Uint8 alpha);
 
-    // Getter for center x
-    float getCenterX() const;
-
-    // Getter for center y
-    float getCenterY() const;
     // Getter for radius
     int getRadius() const;
 
-    void calculateNewPosition(float x, float y);
+    VectorI2 getPosition() const;
+
+    VectorF2 getVelocity() const;
+
+    void updatePosition();
 
 
 };

@@ -7,14 +7,14 @@
 #include "lib/MapLoader.h"
 #include "lib/Player.h"
 
+
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 640;
 
-const int MAP_WIDTH = 60*32;
-const int MAP_HEIGHT = 40*32;
-
 int mouseX, mouseY;
 int maxX, maxY;
+
+bool isSeparation = false;
 
 
 SDL_Rect *camera;
@@ -27,31 +27,12 @@ SDL_Window* gWindow = NULL;
 
 SDL_Renderer* gRenderer = NULL;
 
-SDL_Texture* playerTexture = NULL;
-
-SDL_Texture* playerAmongusTexture = NULL;
-
-SDL_Texture* grassTexture = NULL;
-
-SDL_Texture* skyTexture = NULL;
-
-SDL_Texture* wallTexture = NULL;
-
-SDL_Texture* brickTexture = NULL;
-
+std::vector<Circle> createCircles(int quantity, int r);
 
 bool init();
-//void updatePlayerPosition(SDL_Rect* fillRect1, SDL_Rect* camera, float velocityOfRect);
-void updateCamera(SDL_Rect* camera, Player* p, Player* p2, int* target);
-void cameraInBounds(SDL_Rect* camera);
-void playerInCameraWidth(SDL_Rect* camera, Player* player1, Player* player2);
 
-void update(int player1Velocity, int player2Velocity, Player* p1, Player* p2);
+void ciecleInBounds(Circle* circle);
 
-void drawPlayer(SDL_Rect* camera, SDL_Texture* playerTexture, Player* p);
-void playerInBounds(Player* player);
-
-//bool loadTextures();
 
 void close();
 
@@ -78,46 +59,9 @@ int main(int argc, char* args[])
 		Uint64 currentTime = 0;
 		Uint64 lastTime = 0;
 		Uint64 deltaTime = 0;
-		Uint64 desiredFrameTime = 17;
+		Uint64 desiredFrameTime = 17;		
 
-		camera = new SDL_Rect
-		{
-			SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2,
-			SCREEN_WIDTH,
-			SCREEN_HEIGHT
-		};
-
-		int velocityOfPlayer = 4;
-		Player player1 = Player();
-		VectorI2 v = {SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2};
-		player1.setPosition(v);
-
-		Player player2 = Player();
-		player2.setPosition(v);
-
-		snappingCamera = new SDL_Rect
-		{
-			SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2,
-			SCREEN_WIDTH / 4,
-			SCREEN_HEIGHT / 4
-		};
-		
-		int target = 0;
-		//Teksture for player
-		playerTexture = loadTextureFromTheSurface("res/textures/player.png", gRenderer);
-		playerAmongusTexture = loadTextureFromTheSurface("res/textures/player-amongus.png", gRenderer);
-
-
-		//Tekstures from map loadres
-		std::vector<SDL_Texture*> textures;
-		grassTexture = loadTextureFromTheSurface("res/textures/Background/Green.png", gRenderer);
-		skyTexture = loadTextureFromTheSurface("res/textures/Background/Blue.png", gRenderer);
-		wallTexture = loadTextureFromTheSurface("res/textures/Background/Yellow.png", gRenderer);
-		brickTexture = loadTextureFromTheSurface("res/textures/Background/Brown.png", gRenderer);
-		textures.push_back(grassTexture);
-		textures.push_back(skyTexture);
-		textures.push_back(wallTexture);
-		textures.push_back(brickTexture);
+		createCircles(10, 16);
 
 		//While application is running
 		while (!quit)
@@ -144,12 +88,6 @@ int main(int argc, char* args[])
 
 			}
 
-			
-			
-
-			//elementsOfMap = loadElementInfoFromFile("res/maps/legend.txt");
-			std::vector<std::string> levelMap = loadFromFile("res/maps/map1.txt");
-
 		
 			//Clear screen
 			SDL_SetRenderDrawColor(gRenderer, 0x8B, 0xAC, 0xB7, 0xFF);
@@ -158,26 +96,6 @@ int main(int argc, char* args[])
 			int numberOfColumns = SCREEN_WIDTH / 32;
 			int numberOfRows = SCREEN_HEIGHT / 32;
 
-			for (int i = 0; i < MAP_HEIGHT / 32; i++) {
-				std::string line = levelMap.at(i);
-				for (int j = 0; j < MAP_WIDTH / 32; j++) {
-					drawElement((j * 32 - camera->x), (i * 32 - camera->y), line.at(j), textures, gRenderer);
-				}
-			}
-			//updatePlayerPosition(fillRect1, camera, velocityOfRect);
-			update(velocityOfPlayer ,velocityOfPlayer, &player1, &player2);
-			drawPlayer(camera, playerTexture, &player1);
-			drawPlayer(camera, playerAmongusTexture, &player2);
-			
-			updateCamera(camera, &player1, &player2, &target);
-			playerInCameraWidth(camera, &player1, &player2);
-			playerInBounds(&player1);
-			playerInBounds(&player2);
-			cameraInBounds(camera);
-
-			
-			
-			//SDL_RenderCopy(gRenderer, playerTexture, NULL, fillRect1);
 
 			//Update screen
 			SDL_RenderPresent(gRenderer);
@@ -246,7 +164,15 @@ bool init()
 	return success;
 }
 
-
+std::vector<Circle> createCircles(int quantity, int r) {
+	std::vector<Circle> circles;
+	for (int i = 0; i < quantity; i++) {
+		VectorF2 vel = { 0, 0 };
+		VectorI2 pos = { rand() % (SCREEN_WIDTH - 2 * r) + r, rand() % (SCREEN_HEIGHT - 2 * r) + r };
+		Circle circle = Circle(pos, vel , r);	
+		circles.push_back(circle);
+	}
+}
 
 //Position locking
 void updateCamera(SDL_Rect* camera, Player* p1, Player* p2, int* target) {
@@ -392,44 +318,9 @@ void playerInCameraWidth(SDL_Rect* camera, Player* player1, Player* player2) {
 }
 
 //Edge snapping
-void cameraInBounds(SDL_Rect* camera) {
-	if (camera->x < 0) {
-		camera->x = 0;
-	}
-	if (camera->y < 0) {
-		camera->y = 0;
-	}
-	if (camera->x > MAP_WIDTH - SCREEN_WIDTH) {
-		camera->x = MAP_WIDTH - SCREEN_WIDTH;
-	}
-	if (camera->y > MAP_HEIGHT - SCREEN_HEIGHT) {
-		camera->y = MAP_HEIGHT - SCREEN_HEIGHT;
-	}
+void CiercleInBounds(Circle *circle) {
+
 }
-
-void playerInBounds(Player* player) {
-	if (player->getPosition().x < 0) {
-		VectorI2 v = { 0, player->getPosition().y };
-		player->setPosition(v);
-	}
-	if (player->getPosition().y < 0) {
-		VectorI2 v = { player->getPosition().x, 0 };
-		player->setPosition(v);
-	}
-	if (player->getPosition().x > MAP_WIDTH - 32) {
-		VectorI2 v = { MAP_WIDTH - 32, player->getPosition().y };
-		player->setPosition(v);
-	}
-	if (player->getPosition().y > MAP_HEIGHT - 32) {
-		VectorI2 v = { player->getPosition().x, MAP_HEIGHT - 32 };
-		player->setPosition(v);
-	}
-}
-
-
-
-
-
 
 void close() {
 	SDL_DestroyRenderer(gRenderer);

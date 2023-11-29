@@ -1,22 +1,10 @@
 #include "../lib/Circle.h"
 
-Circle::Circle(float x, float y, int r)
+Circle::Circle(VectorI2 pos, VectorF2 vel, int r)
 {
-    centerX = x;
-    centerY = y;
+    position = pos;
+    velocity = vel;
     radius = r;
-}
-
-// Getter for center x
-float Circle::getCenterX() const
-{
-    return centerX;
-}
-
-// Getter for center y
-float Circle::getCenterY() const
-{
-    return centerY;
 }
 
 // Getter for radius
@@ -25,28 +13,30 @@ int Circle::getRadius() const
     return radius;
 }
 
-// Setter for center x
-void Circle::setCenterX(float x)
+VectorI2 Circle::getPosition() const
 {
-    centerX = x;
+    return VectorI2();
 }
 
-// Setter for center y
-void Circle::setCenterY(float y)
+VectorF2 Circle::getVelocity() const
 {
-    centerY = y;
+    return VectorF2();
 }
 
-// Setter for radius
-void Circle::setRadius(int r)
+void Circle::setPosition(VectorI2 pos)
 {
-    radius = r;
+	position = pos;
 }
 
-void Circle::calculateNewPosition(float x, float y)
+void Circle::setVelocity(VectorF2 vel)
 {
-    centerX += x;
-    centerY += y;
+	velocity = vel;
+}
+
+void Circle::updatePosition()
+{
+	position.x += velocity.x;
+	position.y += velocity.y;
 }
 
 void Circle::drawCircle(SDL_Renderer* renderer, Uint8 alpha)
@@ -59,7 +49,7 @@ void Circle::drawCircle(SDL_Renderer* renderer, Uint8 alpha)
             int dy = radius - h; // vertical offset
             if (dx * dx + dy * dy <= radius * radius) {
                 SDL_SetRenderDrawColor(renderer, 255, 255, 255, alpha);
-                SDL_RenderDrawPoint(renderer, centerX + dx, centerY + dy);
+                SDL_RenderDrawPoint(renderer, position.x + dx, position.y + dy);
             }
         }
     }

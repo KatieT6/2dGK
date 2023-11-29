@@ -29,6 +29,7 @@
     <ClInclude Include="lib\MapLoader.h" />
     <ClInclude Include="lib\Vector.h" />
     <ClInclude Include="lib\Player.h" />
+    <ClInclude Include="structures.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
