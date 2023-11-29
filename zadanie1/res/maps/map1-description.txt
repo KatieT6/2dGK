@@ -1,3 +1,4 @@
-; grass.png
-# sky.png
-- wall.png
+; Green.png
+# Blue.png
+- Yellow.png
+= Brown.png

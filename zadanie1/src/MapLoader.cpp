@@ -17,7 +17,7 @@ std::vector<std::string> loadFromFile(const std::string& fileName) {
 
 
 void drawElement(int x, int y, char sign, std::vector< SDL_Texture*> textures, SDL_Renderer* gRenderer) {
-	SDL_Rect fillRect = { x, y, 64, 64 };
+	SDL_Rect fillRect = { x, y, 32, 32 };
 	
 	if (sign == ';') {
 		SDL_RenderCopy(gRenderer, textures[0], NULL, &fillRect);
@@ -29,8 +29,7 @@ void drawElement(int x, int y, char sign, std::vector< SDL_Texture*> textures, S
 		SDL_RenderCopy(gRenderer, textures[2], NULL, &fillRect);
 	}
 	else if (sign == '=') {
-		SDL_SetRenderDrawColor(gRenderer, 150, 75, 0, 0xFF);
-		SDL_RenderFillRect(gRenderer, &fillRect);
+		SDL_RenderCopy(gRenderer, textures[3], NULL, &fillRect);
 	}
 }
 

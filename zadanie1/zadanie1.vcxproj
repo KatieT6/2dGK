@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Player.cpp" />
+    <ClCompile Include="src\Player.cpp" />
     <ClCompile Include="src\MapLoader.cpp" />
     <ClCompile Include="src\Circle.cpp" />
     <ClCompile Include="main.cpp" />
@@ -27,7 +27,8 @@
   <ItemGroup>
     <ClInclude Include="lib\Circle.h" />
     <ClInclude Include="lib\MapLoader.h" />
-    <ClInclude Include="Player.h" />
+    <ClInclude Include="lib\Vector.h" />
+    <ClInclude Include="lib\Player.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
