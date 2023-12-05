@@ -28,6 +28,9 @@ SDL_Window* gWindow = NULL;
 SDL_Renderer* gRenderer = NULL;
 
 std::vector<Circle> createCircles(int quantity, int r);
+void drawCircles(std::vector<Circle> circles);
+
+std::vector<Circle> circles;
 
 bool init();
 
@@ -61,7 +64,7 @@ int main(int argc, char* args[])
 		Uint64 deltaTime = 0;
 		Uint64 desiredFrameTime = 17;		
 
-		createCircles(10, 16);
+	    circles = createCircles(10, 16);
 
 		//While application is running
 		while (!quit)
@@ -95,6 +98,8 @@ int main(int argc, char* args[])
 
 			int numberOfColumns = SCREEN_WIDTH / 32;
 			int numberOfRows = SCREEN_HEIGHT / 32;
+
+			drawCircles(circles);
 
 
 			//Update screen
@@ -171,6 +176,14 @@ std::vector<Circle> createCircles(int quantity, int r) {
 		VectorI2 pos = { rand() % (SCREEN_WIDTH - 2 * r) + r, rand() % (SCREEN_HEIGHT - 2 * r) + r };
 		Circle circle = Circle(pos, vel , r);	
 		circles.push_back(circle);
+	}
+
+	return circles;
+}
+
+void drawCircles(std::vector<Circle> circles) {
+	for (int i = 0; i < circles.size(); i++) {
+		circles[i].drawCircle(gRenderer, 200);
 	}
 }
 
