@@ -14,7 +14,6 @@ const int SCREEN_HEIGHT = 640;
 int mouseX, mouseY;
 int maxX, maxY;
 
-bool isColisions = false;
 bool isSeparation = false;
 bool isBouncing = false;
 
@@ -36,8 +35,13 @@ bool init();
 
 void drawCircle(Player* p1);
 void updateCircle(Player* p1);
+void updateCirclesPlayers(std::vector<Player>* player);
+void drawCirclesPlayer(std::vector<Player>* player);
 
-void ciecleInBounds(Circle* circle);
+void handleWallColission(Player* player);
+void handleCircleColission(Player* p1, std::vector<Player>* p2);
+
+std::vector<Player> createPlayers(int quantity, int r);
 
 
 void close();
@@ -74,17 +78,7 @@ int main(int argc, char* args[])
 			SCREEN_HEIGHT
 		};
 
-		Player player1 = Player();
-		VectorI2 p = { 100, 100 };
-		VectorF2 velocityOfPlayer = { 2, -2 };
-		player1.setPosition(p);
-		player1.setVelocity(velocityOfPlayer);
-
-		Player player2 = Player();
-		VectorF2 velocityOfPlayer2 = { -100, 100 };
-		VectorI2 p2 = { 200, 200 };
-		player2.setPosition(p2);
-		player2.setVelocity(velocityOfPlayer2);
+		std::vector<Player> players = createPlayers(10, 32);
 
 		//While application is running
 		while (!quit)
@@ -135,19 +129,6 @@ int main(int argc, char* args[])
 							printf("Bouncing: ON.\n");
 						}
 						break;
-
-					case SDLK_3:
-						if (isColisions)
-						{
-							isColisions = false;
-							printf("Bouncing: OFF.\n");
-						}
-						else if (!isColisions)
-						{
-							isColisions = true;
-							printf("Bouncing: ON.\n");
-						}
-						break;
 					}
 				
 				}
@@ -160,13 +141,8 @@ int main(int argc, char* args[])
 			SDL_SetRenderDrawColor(gRenderer, 0x8B, 0xAC, 0xB7, 0xFF);
 			SDL_RenderClear(gRenderer);
 
-			player1.updatePlayerPosition();
-
-			updateCircle(&player1);
-			updateCircle(&player2);
-
-			drawCircle(&player1);
-			drawCircle(&player2);
+			updateCirclesPlayers(&players);
+			drawCirclesPlayer(&players);
 
 			//Update screen
 			SDL_RenderPresent(gRenderer);
@@ -237,23 +213,91 @@ bool init()
 
 
 
+std::vector<Player> createPlayers(int quantity, int r) {
+	std::vector<Player> players;
+	for (int i = 0; i < quantity; i++) {
+		Player player = Player();
+		VectorI2 p = { rand() % (SCREEN_WIDTH - 2 * r) + r, rand() % (SCREEN_HEIGHT - 2 * r) + r };
+		VectorF2 v = { (rand() % 5 - 2) * 1.0f, (rand() % 5 - 2) * 1.0f };
+		player.setPosition(p);
+		player.setVelocity(v);
+		player.setRadius(r);
+		players.push_back(player);
+	}
+	return players;
+}
+
+void updateCirclesPlayers(std::vector<Player>* player) {
+	for (int i = 0; i < player->size(); i++) {
+		player->at(i).updatePlayerPosition();
+		
+
+		if (isBouncing) {
+			for (int j = 0; j < player->size(); j++)
+			{
+				if (i != j) {
+					player->at(i).handleCollision(player->at(j));
+				}
+			}
+		}
+		handleWallColission(&player->at(i));
+		updateCircle(&player->at(i));
+
+		if (isSeparation)
+		{
+			for (int j = 0; j < player->size(); j++)
+			{
+				if (i != j) {
+					player->at(i).separate(player->at(j));
+				}
+			}
+
+		}
+		
+	}
+}
+
+void drawCirclesPlayer(std::vector<Player> *player) {
+	for (int i = 0; i < player->size(); i++) {
+		drawCircle(&player->at(i));
+	}
+}
+
+void handleWallColission(Player* player) {
+	if (player->getPosition().x <= 0 + player->getRadius() || player->getPosition().x >= SCREEN_WIDTH - player->getRadius()) {
+		VectorF2 v = { -player->getVelocity().x, player->getVelocity().y };
+		player->setVelocity(v);
+	}
+	if (player->getPosition().y <= 0 + player->getRadius() || player->getPosition().y >= SCREEN_HEIGHT - player->getRadius()) {
+		VectorF2 v = { player->getVelocity().x, -player->getVelocity().y };
+		player->setVelocity(v);
+	}
+}
+
+
+
+#pragma region helper methods
+
 void drawPlayer(Player* player) {
 	SDL_Rect fillRect = { player->getPosition().x, player->getPosition().y, 32, 32 };
 	SDL_RenderFillRect(gRenderer, &fillRect);
 }
 
 void drawCircle(Player* p1) {
-	Circle circle = Circle(p1->getPosition(), 64);
-	circle.drawCircle(gRenderer, 255);
+	Circle circle = Circle(p1->getPosition(), p1->getRadius());
+	circle.drawCircle(gRenderer, 128);
 
 }
 
 void updateCircle(Player* p1) {
-	Circle circle = Circle(p1->getPosition(), 64);
+	p1->updatePlayerPosition();
+	Circle circle = Circle(p1->getPosition(), p1->getRadius());
 	circle.updatePosition(p1->getVelocity().x, p1->getVelocity().y);
 }
 
+#pragma endregion
 
+#pragma region old code
 //Position locking
 void updateCamera(SDL_Rect* camera, Player* p1, Player* p2, int* target) {
 
@@ -397,10 +441,7 @@ void playerInCameraWidth(SDL_Rect* camera, Player* player1, Player* player2) {
 	}
 }
 
-//Edge snapping
-void CiercleInBounds(Circle *circle) {
-
-}
+#pragma endregion
 
 void close() {
 	SDL_DestroyRenderer(gRenderer);
