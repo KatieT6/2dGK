@@ -14,7 +14,9 @@ const int SCREEN_HEIGHT = 640;
 int mouseX, mouseY;
 int maxX, maxY;
 
+bool isColisions = false;
 bool isSeparation = false;
+bool isBouncing = false;
 
 
 SDL_Rect *camera;
@@ -33,6 +35,8 @@ void drawCircles(std::vector<Circle> circles);
 std::vector<Circle> circles;
 
 bool init();
+
+void updareCirclesPosition(std::vector<Circle> circles);
 
 void ciecleInBounds(Circle* circle);
 
@@ -85,9 +89,54 @@ int main(int argc, char* args[])
 				{
 					mouseX = e.motion.x;
 					mouseY = e.motion.y;
-					printf("We got a motion event.\n");
-					printf("Current mouse position is: (%d, %d)\n", e.motion.x, e.motion.y);
+					//printf("We got a motion event.\n");
+					//printf("Current mouse position is: (%d, %d)\n", e.motion.x, e.motion.y);
 				}
+				else if (e.type == SDL_KEYDOWN) {
+					switch (e.key.keysym.sym) {
+					case SDLK_1:
+						if (isSeparation)
+						{
+							isSeparation = false;
+							printf("Separation: OFF.\n");
+						}
+						else if (!isSeparation)
+						{
+							isSeparation = true;
+							printf("Separation: ON.\n");
+						}
+						break;
+
+					case SDLK_2:
+						if (isBouncing)
+						{
+							isBouncing = false;
+							printf("Bouncing: OFF.\n");
+						}
+						else if (!isBouncing)
+						{
+							isBouncing = true;
+							printf("Bouncing: ON.\n");
+						}
+						break;
+
+					case SDLK_3:
+						if (isColisions)
+						{
+							isColisions = false;
+							printf("Bouncing: OFF.\n");
+						}
+						else if (!isColisions)
+						{
+							isColisions = true;
+							printf("Bouncing: ON.\n");
+						}
+						break;
+					}
+					
+				}
+
+				updareCirclesPosition(circles);
 
 			}
 
@@ -96,8 +145,7 @@ int main(int argc, char* args[])
 			SDL_SetRenderDrawColor(gRenderer, 0x8B, 0xAC, 0xB7, 0xFF);
 			SDL_RenderClear(gRenderer);
 
-			int numberOfColumns = SCREEN_WIDTH / 32;
-			int numberOfRows = SCREEN_HEIGHT / 32;
+			
 
 			drawCircles(circles);
 
@@ -172,7 +220,7 @@ bool init()
 std::vector<Circle> createCircles(int quantity, int r) {
 	std::vector<Circle> circles;
 	for (int i = 0; i < quantity; i++) {
-		VectorF2 vel = { 0, 0 };
+		VectorF2 vel = { 10, 10};
 		VectorI2 pos = { rand() % (SCREEN_WIDTH - 2 * r) + r, rand() % (SCREEN_HEIGHT - 2 * r) + r };
 		Circle circle = Circle(pos, vel , r);	
 		circles.push_back(circle);
@@ -186,6 +234,14 @@ void drawCircles(std::vector<Circle> circles) {
 		circles[i].drawCircle(gRenderer, 200);
 	}
 }
+
+void updareCirclesPosition(std::vector<Circle> circles) {
+	for (int i = 0; i < circles.size(); i++) {
+		circles[i].updatePosition();
+	}
+}
+
+
 
 //Position locking
 void updateCamera(SDL_Rect* camera, Player* p1, Player* p2, int* target) {
