@@ -29,14 +29,13 @@ SDL_Window* gWindow = NULL;
 
 SDL_Renderer* gRenderer = NULL;
 
-std::vector<Circle> createCircles(int quantity, int r);
-void drawCircles(std::vector<Circle> circles);
 
 std::vector<Circle> circles;
 
 bool init();
 
-void updareCirclesPosition(std::vector<Circle> circles);
+void drawCircle(Player* p1);
+void updateCircle(Player* p1);
 
 void ciecleInBounds(Circle* circle);
 
@@ -66,9 +65,26 @@ int main(int argc, char* args[])
 		Uint64 currentTime = 0;
 		Uint64 lastTime = 0;
 		Uint64 deltaTime = 0;
-		Uint64 desiredFrameTime = 17;		
+		Uint64 desiredFrameTime = 17;
 
-	    circles = createCircles(10, 16);
+		camera = new SDL_Rect
+		{
+			SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2,
+			SCREEN_WIDTH,
+			SCREEN_HEIGHT
+		};
+
+		Player player1 = Player();
+		VectorI2 p = { 100, 100 };
+		VectorF2 velocityOfPlayer = { 2, -2 };
+		player1.setPosition(p);
+		player1.setVelocity(velocityOfPlayer);
+
+		Player player2 = Player();
+		VectorF2 velocityOfPlayer2 = { -100, 100 };
+		VectorI2 p2 = { 200, 200 };
+		player2.setPosition(p2);
+		player2.setVelocity(velocityOfPlayer2);
 
 		//While application is running
 		while (!quit)
@@ -133,22 +149,24 @@ int main(int argc, char* args[])
 						}
 						break;
 					}
-					
+				
 				}
 
-				updareCirclesPosition(circles);
-
+					
 			}
 
-		
+				
 			//Clear screen
 			SDL_SetRenderDrawColor(gRenderer, 0x8B, 0xAC, 0xB7, 0xFF);
 			SDL_RenderClear(gRenderer);
 
-			
+			player1.updatePlayerPosition();
 
-			drawCircles(circles);
+			updateCircle(&player1);
+			updateCircle(&player2);
 
+			drawCircle(&player1);
+			drawCircle(&player2);
 
 			//Update screen
 			SDL_RenderPresent(gRenderer);
@@ -217,30 +235,23 @@ bool init()
 	return success;
 }
 
-std::vector<Circle> createCircles(int quantity, int r) {
-	std::vector<Circle> circles;
-	for (int i = 0; i < quantity; i++) {
-		VectorF2 vel = { 10, 10};
-		VectorI2 pos = { rand() % (SCREEN_WIDTH - 2 * r) + r, rand() % (SCREEN_HEIGHT - 2 * r) + r };
-		Circle circle = Circle(pos, vel , r);	
-		circles.push_back(circle);
-	}
 
-	return circles;
+
+void drawPlayer(Player* player) {
+	SDL_Rect fillRect = { player->getPosition().x, player->getPosition().y, 32, 32 };
+	SDL_RenderFillRect(gRenderer, &fillRect);
 }
 
-void drawCircles(std::vector<Circle> circles) {
-	for (int i = 0; i < circles.size(); i++) {
-		circles[i].drawCircle(gRenderer, 200);
-	}
+void drawCircle(Player* p1) {
+	Circle circle = Circle(p1->getPosition(), 64);
+	circle.drawCircle(gRenderer, 255);
+
 }
 
-void updareCirclesPosition(std::vector<Circle> circles) {
-	for (int i = 0; i < circles.size(); i++) {
-		circles[i].updatePosition();
-	}
+void updateCircle(Player* p1) {
+	Circle circle = Circle(p1->getPosition(), 64);
+	circle.updatePosition(p1->getVelocity().x, p1->getVelocity().y);
 }
-
 
 
 //Position locking

@@ -22,8 +22,9 @@ public:
 	VectorI2 getPosition();
 	VectorF2 getVelocity();
 
-	VectorI2 setPosition(VectorI2 &pos);
-	VectorF2 setVelocity(VectorF2 &vel);
+	VectorI2 setPosition(VectorI2& pos);
+	VectorF2 setVelocity(VectorF2& vel);
 	VectorF2 setTargetVelocity(VectorF2 &vel);
+	void updatePlayerPosition();
 };
 

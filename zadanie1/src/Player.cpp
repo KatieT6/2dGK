@@ -44,4 +44,10 @@ VectorF2 Player::setTargetVelocity(VectorF2& vel)
 	return targetVelocity = vel;
 }
 
+void Player::updatePlayerPosition()
+{
+	position.x += velocity.x;
+	position.y += velocity.y;
+}
+
 

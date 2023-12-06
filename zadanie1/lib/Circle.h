@@ -8,16 +8,13 @@
 class Circle
 {
 private:
-    VectorF2 velocity;
     VectorI2 position;
     int radius;
 
     void setPosition(VectorI2 pos);
 
-    void setVelocity(VectorF2 vel);
-
 public:
-    Circle(VectorI2 pos, VectorF2 vel, int r);
+    Circle(VectorI2 pos, int r);
     void drawCircle(SDL_Renderer* renderer, Uint8 alpha);
 
     // Getter for radius
@@ -25,9 +22,8 @@ public:
 
     VectorI2 getPosition() const;
 
-    VectorF2 getVelocity() const;
 
-    void updatePosition();
+    void updatePosition(float x, float y);
 
 
 };

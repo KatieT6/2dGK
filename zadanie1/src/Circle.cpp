@@ -1,9 +1,8 @@
 #include "../lib/Circle.h"
 
-Circle::Circle(VectorI2 pos, VectorF2 vel, int r)
+Circle::Circle(VectorI2 pos, int r)
 {
     position = pos;
-    velocity = vel;
     radius = r;
 }
 
@@ -18,25 +17,17 @@ VectorI2 Circle::getPosition() const
     return VectorI2();
 }
 
-VectorF2 Circle::getVelocity() const
-{
-    return VectorF2();
-}
 
 void Circle::setPosition(VectorI2 pos)
 {
 	position = pos;
 }
 
-void Circle::setVelocity(VectorF2 vel)
-{
-	velocity = vel;
-}
 
-void Circle::updatePosition()
+void Circle::updatePosition(float x, float y)
 {
-	position.x += velocity.x;
-	position.y += velocity.y;
+	position.x += x;
+	position.y += y;
 }
 
 void Circle::drawCircle(SDL_Renderer* renderer, Uint8 alpha)
