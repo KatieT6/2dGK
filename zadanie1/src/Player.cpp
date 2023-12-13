@@ -6,14 +6,36 @@
 const int WIDTH = 800;
 const int HEIGHT = 640;
 
-
 Player::Player()
+{
+	velocity = { 0 , 0 };
+	position = { 64, 64 };
+	targetVelocity = { 0, 0 };
+	screenPosition = { 0, 0 };
+	r = 0;
+	isCircle = false;
+}
+
+Player::Player(bool isCircle)
 {
 	velocity = {0 , 0 };
 	position = { 64, 64 };
 	targetVelocity = { 0, 0 };
 	screenPosition = { 0, 0 };
 	r = 0;
+	this->isCircle = isCircle;
+}
+
+Player::Player(bool isCircle, int width, int height)
+{
+	velocity = {0 , 0 };
+	position = { 64, 64 };
+	targetVelocity = { 0, 0 };
+	screenPosition = { 0, 0 };
+	r = 0;
+	this->isCircle = isCircle;
+	this->widht = width;
+	this->height = height;
 }
 
 Player::~Player()
@@ -68,7 +90,7 @@ void Player::updatePlayerPosition()
 	position.y += velocity.y;
 }
 
-void Player::handleCollision(Player otherPlayer)
+void Player::CircleCircleCollision(Player otherPlayer)
 {
 	VectorF2 distance = { 
 		abs((position.x + r / 2.0f) - (otherPlayer.position.x + otherPlayer.r / 2.0f)),
@@ -88,6 +110,16 @@ void Player::handleCollision(Player otherPlayer)
 			velocity.x - 2 * (separation.x * velocity.x + separation.y * velocity.y) * separation.x,
 			velocity.y - (2 * (separation.x * velocity.x + separation.y * velocity.y) * separation.y) };
 		velocity = newVel;
+	}
+}
+
+void Player::RectRectCollision(Player otherPlayer) {
+	if (this->isCircle && otherPlayer.isCircle) {
+		s
+		if (true)
+		{
+
+		}
 	}
 }
 

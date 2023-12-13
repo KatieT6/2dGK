@@ -11,12 +11,16 @@
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 640;
 
+const int MAP_WIDTH = 60 * 32;
+const int MAP_HEIGHT = 40 * 32;
+
 int mouseX, mouseY;
 int maxX, maxY;
 
 bool isSeparation = false;
 bool isBouncing = false;
 
+#pragma region SDL
 
 SDL_Rect *camera;
 
@@ -28,6 +32,19 @@ SDL_Window* gWindow = NULL;
 
 SDL_Renderer* gRenderer = NULL;
 
+SDL_Texture* playerTexture = NULL;
+
+SDL_Texture* playerAmongusTexture = NULL;
+
+SDL_Texture* grassTexture = NULL;
+
+SDL_Texture* skyTexture = NULL;
+
+SDL_Texture* wallTexture = NULL;
+
+SDL_Texture* brickTexture = NULL;
+
+#pragma endregion
 
 std::vector<Circle> circles;
 
@@ -40,11 +57,19 @@ void drawCirclesPlayer(std::vector<Player>* player);
 
 void handleWallColission(Player* player);
 
-std::vector<Player> createPlayers(int quantity, int r);
+std::vector<Player> createPlayers(int quantity, int r, bool isCircle);
+void drawPlayerWithTextures(SDL_Rect* camera, SDL_Texture* playerTexture, Player* p);
+void drawCirclesPlayer(std::vector<Player>* player);
+
+void updateCamera(SDL_Rect* camera, Player* p1, Player* p2, int* target);
+void cameraInBounds(SDL_Rect* camera);
+void playerInBounds(Player* player);
+void playerInCameraWidth(SDL_Rect* camera, Player* player1, Player* player2);
 
 
 void close();
 
+void update(int player1Velocity, int player2Velocity, Player* p1, Player* p2);
 float smoothingMotion(float targetSpeed, float smooth, float velocity);
 
 
@@ -77,7 +102,37 @@ int main(int argc, char* args[])
 			SCREEN_HEIGHT
 		};
 
-		std::vector<Player> players = createPlayers(10, 32);
+		int velocityOfPlayer = 4;
+		Player player1 = Player();
+		VectorI2 v = { SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };
+		player1.setPosition(v);
+
+		Player player2 = Player();
+		player2.setPosition(v);
+
+		snappingCamera = new SDL_Rect
+		{
+			SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2,
+			SCREEN_WIDTH / 4,
+			SCREEN_HEIGHT / 4
+		};
+
+		int target = 0;
+		//Teksture for player
+		playerTexture = loadTextureFromTheSurface("res/textures/player.png", gRenderer);
+		playerAmongusTexture = loadTextureFromTheSurface("res/textures/player-amongus.png", gRenderer);
+
+
+		//Tekstures from map loadres
+		std::vector<SDL_Texture*> textures;
+		grassTexture = loadTextureFromTheSurface("res/textures/Background/Green.png", gRenderer);
+		skyTexture = loadTextureFromTheSurface("res/textures/Background/Blue.png", gRenderer);
+		wallTexture = loadTextureFromTheSurface("res/textures/Background/Yellow.png", gRenderer);
+		brickTexture = loadTextureFromTheSurface("res/textures/Background/Brown.png", gRenderer);
+		textures.push_back(grassTexture);
+		textures.push_back(skyTexture);
+		textures.push_back(wallTexture);
+		textures.push_back(brickTexture);
 
 		//While application is running
 		while (!quit)
@@ -98,50 +153,46 @@ int main(int argc, char* args[])
 				{
 					mouseX = e.motion.x;
 					mouseY = e.motion.y;
-					//printf("We got a motion event.\n");
-					//printf("Current mouse position is: (%d, %d)\n", e.motion.x, e.motion.y);
-				}
-				else if (e.type == SDL_KEYDOWN) {
-					switch (e.key.keysym.sym) {
-					case SDLK_1:
-						if (isSeparation)
-						{
-							isSeparation = false;
-							printf("Separation: OFF.\n");
-						}
-						else if (!isSeparation)
-						{
-							isSeparation = true;
-							printf("Separation: ON.\n");
-						}
-						break;
-
-					case SDLK_2:
-						if (isBouncing)
-						{
-							isBouncing = false;
-							printf("Bouncing: OFF.\n");
-						}
-						else if (!isBouncing)
-						{
-							isBouncing = true;
-							printf("Bouncing: ON.\n");
-						}
-						break;
-					}
-				
+					printf("We got a motion event.\n");
+					printf("Current mouse position is: (%d, %d)\n", e.motion.x, e.motion.y);
 				}
 
-					
 			}
 
-				
+
+
+
+			//elementsOfMap = loadElementInfoFromFile("res/maps/legend.txt");
+			std::vector<std::string> levelMap = loadFromFile("res/maps/map1.txt");
+
+
 			//Clear screen
 			SDL_SetRenderDrawColor(gRenderer, 0x8B, 0xAC, 0xB7, 0xFF);
 			SDL_RenderClear(gRenderer);
 
-			updateCirclesPlayers(&players);
-			drawCirclesPlayer(&players);
+			int numberOfColumns = SCREEN_WIDTH / 32;
+			int numberOfRows = SCREEN_HEIGHT / 32;
+
+			for (int i = 0; i < MAP_HEIGHT / 32; i++) {
+				std::string line = levelMap.at(i);
+				for (int j = 0; j < MAP_WIDTH / 32; j++) {
+					drawElement((j * 32 - camera->x), (i * 32 - camera->y), line.at(j), textures, gRenderer);
+				}
+			}
+			//updatePlayerPosition(fillRect1, camera, velocityOfRect);
+			update(velocityOfPlayer, velocityOfPlayer, &player1, &player2);
+			drawPlayerWithTextures(camera, playerTexture, &player1);
+			drawPlayerWithTextures(camera, playerAmongusTexture, &player2);
+
+			updateCamera(camera, &player1, &player2, &target);
+			playerInCameraWidth(camera, &player1, &player2);
+			playerInBounds(&player1);
+			playerInBounds(&player2);
+			cameraInBounds(camera);
+
+
+
+			//SDL_RenderCopy(gRenderer, playerTexture, NULL, fillRect1);
 
 			//Update screen
 			SDL_RenderPresent(gRenderer);
@@ -212,10 +263,19 @@ bool init()
 
 
 
-std::vector<Player> createPlayers(int quantity, int r) {
+std::vector<Player> createPlayers(int quantity, int r, bool isCircle) {
+	Player player;
 	std::vector<Player> players;
 	for (int i = 0; i < quantity; i++) {
-		Player player = Player();
+		if (isCircle)
+		{
+			Player player = Player(true);
+
+		}
+		else
+		{
+			Player player = Player(false);
+		}
 		VectorI2 p = { rand() % (SCREEN_WIDTH - 2 * r) + r, rand() % (SCREEN_HEIGHT - 2 * r) + r };
 		VectorF2 v = { 4, 4 };
 		player.setPosition(p);
@@ -284,16 +344,24 @@ void drawPlayer(Player* player) {
 	SDL_RenderFillRect(gRenderer, &fillRect);
 }
 
-void drawCircle(Player* p1) {
-	Circle circle = Circle(p1->getPosition(), p1->getRadius());
-	circle.drawCircle(gRenderer, 128);
+void drawPlayer(SDL_Rect* camera,Player* p) {
+	SDL_Rect fillRect = { p->getPosition().x - camera->x, p->getPosition().y - camera->y, 32, 32 };
+	SDL_RenderFillRect(gRenderer, &fillRect);
+}
 
+void drawCircle(Player* p1) {
+	Circle circle = Circle( { p1->getPosition().x - camera->x, p1->getPosition().y - camera->y }, p1->getRadius());
+	circle.drawCircle(gRenderer, 128);
 }
 
 void updateCircle(Player* p1) {
 	p1->updatePlayerPosition();
 	Circle circle = Circle(p1->getPosition(), p1->getRadius());
 	circle.updatePosition(p1->getVelocity().x, p1->getVelocity().y);
+}
+
+void updateRect(Player* p1) {
+	p1->updatePlayerPosition();
 }
 
 #pragma endregion
@@ -329,6 +397,41 @@ void updateCamera(SDL_Rect* camera, Player* p1, Player* p2, int* target) {
 	camera->x = *target * (1.0f - smooth) + camera->x * smooth;
 	camera->y = p1->getPosition().y + 16 - SCREEN_HEIGHT / 2;
 
+}
+
+//Edge snapping
+void cameraInBounds(SDL_Rect* camera) {
+	if (camera->x < 0) {
+		camera->x = 0;
+	}
+	if (camera->y < 0) {
+		camera->y = 0;
+	}
+	if (camera->x > MAP_WIDTH - SCREEN_WIDTH) {
+		camera->x = MAP_WIDTH - SCREEN_WIDTH;
+	}
+	if (camera->y > MAP_HEIGHT - SCREEN_HEIGHT) {
+		camera->y = MAP_HEIGHT - SCREEN_HEIGHT;
+	}
+}
+
+void playerInBounds(Player* player) {
+	if (player->getPosition().x < 0) {
+		VectorI2 v = { 0, player->getPosition().y };
+		player->setPosition(v);
+	}
+	if (player->getPosition().y < 0) {
+		VectorI2 v = { player->getPosition().x, 0 };
+		player->setPosition(v);
+	}
+	if (player->getPosition().x > MAP_WIDTH - 32) {
+		VectorI2 v = { MAP_WIDTH - 32, player->getPosition().y };
+		player->setPosition(v);
+	}
+	if (player->getPosition().y > MAP_HEIGHT - 32) {
+		VectorI2 v = { player->getPosition().x, MAP_HEIGHT - 32 };
+		player->setPosition(v);
+	}
 }
 
 
@@ -406,7 +509,7 @@ float smoothingMotion(float targetSpeed, float smooth, float velocity) {
 	return targetSpeed * (1 - smooth) + velocity * smooth;
 }
 
-void drawPlayer(SDL_Rect* camera, SDL_Texture* playerTexture, Player* p) {
+void drawPlayerWithTextures(SDL_Rect* camera, SDL_Texture* playerTexture, Player* p) {
 	SDL_Rect fillRect = {p->getPosition().x -camera->x, p->getPosition().y - camera->y, 32, 32};
 	SDL_RenderCopy(gRenderer, playerTexture, NULL, &fillRect);
 }

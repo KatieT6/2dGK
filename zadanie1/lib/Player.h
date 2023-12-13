@@ -11,9 +11,14 @@ private:
 	VectorF2 targetVelocity;
 	VectorF2 screenPosition;
 	int r;
+	bool isCircle;
+	int widht;
+	int height;
 
 public:
 	Player();
+	Player(bool isCircle);
+	Player(bool isCircle, int width, int height);
 	~Player();
 
 	//void update(int player1Velocity, int player2Velocity, Player* p1, Player* p2);
@@ -30,7 +35,8 @@ public:
 	void setRadius(int radius);
 
 	void updatePlayerPosition();
-	void handleCollision(Player otherPlayer);
+	void CircleCircleCollision(Player otherPlayer);
+	void RectRectCollision(Player otherPlayer);
 	void handleWallCollision();
 	void separate(Player otherPlayer);
 };
