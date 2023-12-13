@@ -31,6 +31,7 @@ public:
 
 	void updatePlayerPosition();
 	void handleCollision(Player otherPlayer);
+	void handleWallCollision();
 	void separate(Player otherPlayer);
 };
 

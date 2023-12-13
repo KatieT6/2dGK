@@ -3,6 +3,8 @@
 #include <cmath>
 #include <iostream>
 
+const int WIDTH = 800;
+const int HEIGHT = 640;
 
 
 Player::Player()
@@ -72,7 +74,7 @@ void Player::handleCollision(Player otherPlayer)
 		abs((position.x + r / 2.0f) - (otherPlayer.position.x + otherPlayer.r / 2.0f)),
 		abs((position.y + r / 2.0f) - (otherPlayer.position.y + otherPlayer.r / 2.0f)) };
 	float length = sqrt(distance.x * distance.x + distance.y * distance.y);
-	if (length < r + otherPlayer.r) {
+	if (length <= r + otherPlayer.r) {
 		VectorF2 separation = { position.x - otherPlayer.getPosition().x, position.y - otherPlayer.getPosition().y };
 		float overlap = (r + otherPlayer.r - length) / length;
 		separation.x *= overlap;
@@ -86,6 +88,37 @@ void Player::handleCollision(Player otherPlayer)
 			velocity.x - 2 * (separation.x * velocity.x + separation.y * velocity.y) * separation.x,
 			velocity.y - (2 * (separation.x * velocity.x + separation.y * velocity.y) * separation.y) };
 		velocity = newVel;
+	}
+}
+
+void Player::handleWallCollision()
+{
+	if (position.x <= 0 + r) {
+		if (velocity.x <= 0) {
+			VectorF2 v = { -velocity.x, velocity.y };
+			velocity = v;
+		}
+	}
+	else if (position.x >= WIDTH - r)
+	{
+		if (velocity.x >= 0) {
+			VectorF2 v = { -velocity.x, velocity.y };
+			velocity = v;
+		}
+	}
+	if (position.y <= 0 + r) {
+		if (velocity.y <= 0) {
+			VectorF2 v = { velocity.x, -velocity.y };
+			velocity = v;
+		}
+	}
+	else if (position.y >= HEIGHT - r)
+	{
+		if (velocity.y >= 0) {
+			VectorF2 v = { velocity.x, -velocity.y };
+			velocity = v;
+		}
+
 	}
 }
 

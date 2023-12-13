@@ -39,7 +39,6 @@ void updateCirclesPlayers(std::vector<Player>* player);
 void drawCirclesPlayer(std::vector<Player>* player);
 
 void handleWallColission(Player* player);
-void handleCircleColission(Player* p1, std::vector<Player>* p2);
 
 std::vector<Player> createPlayers(int quantity, int r);
 
@@ -218,7 +217,7 @@ std::vector<Player> createPlayers(int quantity, int r) {
 	for (int i = 0; i < quantity; i++) {
 		Player player = Player();
 		VectorI2 p = { rand() % (SCREEN_WIDTH - 2 * r) + r, rand() % (SCREEN_HEIGHT - 2 * r) + r };
-		VectorF2 v = { (rand() % 5 - 2) * 1.0f, (rand() % 5 - 2) * 1.0f };
+		VectorF2 v = { 4, 4 };
 		player.setPosition(p);
 		player.setVelocity(v);
 		player.setRadius(r);
@@ -229,19 +228,9 @@ std::vector<Player> createPlayers(int quantity, int r) {
 
 void updateCirclesPlayers(std::vector<Player>* player) {
 	for (int i = 0; i < player->size(); i++) {
-		player->at(i).updatePlayerPosition();
-		
-
-		if (isBouncing) {
-			for (int j = 0; j < player->size(); j++)
-			{
-				if (i != j) {
-					player->at(i).handleCollision(player->at(j));
-				}
-			}
-		}
-		handleWallColission(&player->at(i));
+		//player->at(i).updatePlayerPosition();
 		updateCircle(&player->at(i));
+
 
 		if (isSeparation)
 		{
@@ -253,6 +242,18 @@ void updateCirclesPlayers(std::vector<Player>* player) {
 			}
 
 		}
+
+		if (isBouncing) {
+			for (int j = 0; j < player->size(); j++)
+			{
+				if (i != j) {
+					player->at(i).handleCollision(player->at(j));
+				}
+			}
+		}		
+
+		
+		player->at(i).handleWallCollision();
 		
 	}
 }
