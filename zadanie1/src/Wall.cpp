@@ -1,0 +1,7 @@
+Wall::Wall()
+{
+}
+
+Wall::~Wall()
+{
+}

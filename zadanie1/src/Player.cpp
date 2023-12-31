@@ -12,9 +12,7 @@ Player::Player()
 	position = { 64, 64 };
 	targetVelocity = { 0, 0 };
 	screenPosition = { 0, 0 };
-	r = 0;
-	isCircle = false;
-}
+}:GameObject()
 
 Player::Player(bool isCircle)
 {
@@ -115,7 +113,6 @@ void Player::CircleCircleCollision(Player otherPlayer)
 
 void Player::RectRectCollision(Player otherPlayer) {
 	if (this->isCircle && otherPlayer.isCircle) {
-		s
 		if (true)
 		{
 

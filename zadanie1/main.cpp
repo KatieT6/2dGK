@@ -307,7 +307,7 @@ void updateCirclesPlayers(std::vector<Player>* player) {
 			for (int j = 0; j < player->size(); j++)
 			{
 				if (i != j) {
-					player->at(i).handleCollision(player->at(j));
+					//player->at(i).handleCollision(player->at(j));
 				}
 			}
 		}		

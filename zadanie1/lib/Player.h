@@ -2,18 +2,16 @@
 #include "Vector.h"
 #include <SDL.h>
 #include <stdio.h>
+#include "GameObject.h"
 
-class Player
+class Player: public GameObject
 {
 private:
 	VectorI2 position;
 	VectorF2 velocity;
 	VectorF2 targetVelocity;
 	VectorF2 screenPosition;
-	int r;
-	bool isCircle;
-	int widht;
-	int height;
+	
 
 public:
 	Player();
