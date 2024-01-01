@@ -269,12 +269,12 @@ std::vector<Player> createPlayers(int quantity, int r, bool isCircle) {
 	for (int i = 0; i < quantity; i++) {
 		if (isCircle)
 		{
-			Player player = Player(true);
+			Player player = Player(true, r, VectorI2{0,0});
 
 		}
 		else
 		{
-			Player player = Player(false);
+			Player player = Player(32, 32, VectorI2{ 0,0 });
 		}
 		VectorI2 p = { rand() % (SCREEN_WIDTH - 2 * r) + r, rand() % (SCREEN_HEIGHT - 2 * r) + r };
 		VectorF2 v = { 4, 4 };
@@ -288,7 +288,7 @@ std::vector<Player> createPlayers(int quantity, int r, bool isCircle) {
 
 void updateCirclesPlayers(std::vector<Player>* player) {
 	for (int i = 0; i < player->size(); i++) {
-		//player->at(i).updatePlayerPosition();
+		player->at(i).updatePlayerPosition();
 		updateCircle(&player->at(i));
 
 
@@ -307,7 +307,7 @@ void updateCirclesPlayers(std::vector<Player>* player) {
 			for (int j = 0; j < player->size(); j++)
 			{
 				if (i != j) {
-					//player->at(i).handleCollision(player->at(j));
+					player->at(i).CircleCircleCollision(player->at(j));
 				}
 			}
 		}		

@@ -8,39 +8,40 @@ const int HEIGHT = 640;
 
 Player::Player()
 {
-	velocity = { 0 , 0 };
-	position = { 64, 64 };
-	targetVelocity = { 0, 0 };
-	screenPosition = { 0, 0 };
-}:GameObject()
-
-Player::Player(bool isCircle)
-{
-	velocity = {0 , 0 };
-	position = { 64, 64 };
-	targetVelocity = { 0, 0 };
-	screenPosition = { 0, 0 };
-	r = 0;
-	this->isCircle = isCircle;
+	position = { 0, 0 };
 }
 
-Player::Player(bool isCircle, int width, int height)
+Player::Player(bool isCircle, int r, VectorI2 pos)
+{
+	position = pos;
+	r = r;
+	isCircle = isCircle;
+	if (isCircle)
+	{
+		collider = new CircleCollider(pos, r);
+	}
+	else
+	{
+		collider - new RectCollider(pos, 32, 32);
+	}
+}
+
+Player::Player(int width, int height, VectorI2 pos)
 {
 	velocity = {0 , 0 };
-	position = { 64, 64 };
+	position = pos;
 	targetVelocity = { 0, 0 };
 	screenPosition = { 0, 0 };
-	r = 0;
-	this->isCircle = isCircle;
-	this->widht = width;
-	this->height = height;
+	widht = width;
+	height = height;
 }
 
 Player::~Player()
 {
+	delete collider;
 }
 
-
+#pragma region setters/getters
 
 VectorF2 Player::getTargetVelocity()
 {
@@ -62,25 +63,27 @@ int Player::getRadius()
 	return r;
 }
 
-VectorI2 Player::setPosition(VectorI2& pos)
+void Player::setPosition(VectorI2& pos)
 {
-	return position = pos;
+	 position = pos;
 }
 
-VectorF2 Player::setVelocity(VectorF2& vel)
+void Player::setVelocity(VectorF2& vel)
 {
-	return velocity = vel;
+	 velocity = vel;
 }
 
-VectorF2 Player::setTargetVelocity(VectorF2& vel)
+void Player::setTargetVelocity(VectorF2& vel)
 {
-	return targetVelocity = vel;
+	 targetVelocity = vel;
 }
 
 void Player::setRadius(int radius)
 {
 	r = radius;
 }
+
+#pragma endregion
 
 void Player::updatePlayerPosition()
 {

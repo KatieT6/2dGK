@@ -1,22 +1,28 @@
-
 #include "Vector.h"
 #include <SDL.h>
 #include <stdio.h>
-#include "GameObject.h"
+#include "Collider.h"
 
-class Player: public GameObject
+class Player
 {
 private:
 	VectorI2 position;
-	VectorF2 velocity;
-	VectorF2 targetVelocity;
-	VectorF2 screenPosition;
+	VectorF2 velocity = { 0 , 0 };
+	VectorF2 targetVelocity = { 0 , 0 };
+	VectorF2 screenPosition = { 0, 0 };
+	bool isWall = false;
+	bool isCircle = false;
+	int r = 0;
+	int widht = 0;
+	int height = 0;
+
+	Collider* collider;
 	
 
 public:
 	Player();
-	Player(bool isCircle);
-	Player(bool isCircle, int width, int height);
+	Player(bool isCircle, int r, VectorI2 position);
+	Player(int width, int height, VectorI2 position);
 	~Player();
 
 	//void update(int player1Velocity, int player2Velocity, Player* p1, Player* p2);
@@ -27,12 +33,12 @@ public:
 	VectorF2 getVelocity();
 	int getRadius();
 
-	VectorI2 setPosition(VectorI2& pos);
-	VectorF2 setVelocity(VectorF2& vel);
-	VectorF2 setTargetVelocity(VectorF2 &vel);
+	void setPosition(VectorI2& pos);
+	void setVelocity(VectorF2& vel);
+	void setTargetVelocity(VectorF2 &vel);
 	void setRadius(int radius);
 
-	void updatePlayerPosition();
+	void updatePlayerPosition();  
 	void CircleCircleCollision(Player otherPlayer);
 	void RectRectCollision(Player otherPlayer);
 	void handleWallCollision();

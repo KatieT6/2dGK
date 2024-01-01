@@ -1,7 +1,0 @@
-Wall::Wall()
-{
-}
-
-Wall::~Wall()
-{
-}

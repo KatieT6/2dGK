@@ -19,20 +19,19 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="GameObject.cpp" />
+    <ClCompile Include="Collider.cpp" />
     <ClCompile Include="src\Player.cpp" />
     <ClCompile Include="src\MapLoader.cpp" />
     <ClCompile Include="src\Circle.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Wall.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lib\Circle.h" />
-    <ClInclude Include="lib\GameObject.h" />
+    <ClInclude Include="lib\Collider.h" />
     <ClInclude Include="lib\MapLoader.h" />
     <ClInclude Include="lib\Vector.h" />
     <ClInclude Include="lib\Player.h" />
-    <ClInclude Include="Wall.h" />
+    <ClInclude Include="lib\Wall.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
