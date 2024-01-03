@@ -1,7 +1,10 @@
+#pragma once
+
 #include "Vector.h"
 #include <SDL.h>
 #include <stdio.h>
-#include "Collider.h"
+//#include "Collider.h"
+#include "Wall.h"
 
 class Player
 {
@@ -13,10 +16,10 @@ private:
 	bool isWall = false;
 	bool isCircle = false;
 	int r = 0;
-	int widht = 0;
+	int width = 0;
 	int height = 0;
 
-	Collider* collider;
+	//Collider* collider;
 	
 
 public:
@@ -40,7 +43,7 @@ public:
 
 	void updatePlayerPosition();  
 	void CircleCircleCollision(Player otherPlayer);
-	void RectRectCollision(Player otherPlayer);
+	void RectRectCollision(Wall otherPlayer);
 	void handleWallCollision();
 	void separate(Player otherPlayer);
 };

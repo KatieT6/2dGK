@@ -1,4 +1,9 @@
 #pragma once
+
+#ifndef VECTOR_H
+
+
+
 struct VectorI2
 {
 	int x, y;
@@ -18,3 +23,5 @@ struct VectorF3
 {
 	float x, y, z;
 };
+
+#endif // !VECTOR_H

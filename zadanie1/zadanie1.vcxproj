@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Collider.cpp" />
     <ClCompile Include="src\Player.cpp" />
     <ClCompile Include="src\MapLoader.cpp" />
     <ClCompile Include="src\Circle.cpp" />
@@ -32,6 +31,7 @@
     <ClInclude Include="lib\Vector.h" />
     <ClInclude Include="lib\Player.h" />
     <ClInclude Include="lib\Wall.h" />
+    <ClInclude Include="Values.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

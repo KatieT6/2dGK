@@ -1,6 +1,8 @@
 #include "../lib/MapLoader.h"
 
 
+
+
 //loading map or other files to vector by line 
 std::vector<std::string> loadFromFile(const std::string& fileName) {
 	std::ifstream file(fileName);
@@ -16,8 +18,9 @@ std::vector<std::string> loadFromFile(const std::string& fileName) {
 }
 
 
-void drawElement(int x, int y, char sign, std::vector< SDL_Texture*> textures, SDL_Renderer* gRenderer) {
-	SDL_Rect fillRect = { x, y, 32, 32 };
+void drawElement(int x, int y, char sign, std::vector< SDL_Texture*> textures, SDL_Renderer* gRenderer, std::vector<Wall>* ListWalls, int x_m, int y_m) {
+	SDL_Rect fillRect = { x, y,  32,  32 };
+	VectorI2* position = new VectorI2{ x_m, y_m };
 	
 	if (sign == ';') {
 		SDL_RenderCopy(gRenderer, textures[0], NULL, &fillRect);
@@ -30,6 +33,8 @@ void drawElement(int x, int y, char sign, std::vector< SDL_Texture*> textures, S
 	}
 	else if (sign == '=') {
 		SDL_RenderCopy(gRenderer, textures[3], NULL, &fillRect);
+		Wall wall = Wall(position, 32, 32);
+		ListWalls->push_back(wall);
 	}
 }
 

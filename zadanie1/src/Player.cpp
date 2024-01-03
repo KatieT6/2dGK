@@ -18,11 +18,11 @@ Player::Player(bool isCircle, int r, VectorI2 pos)
 	isCircle = isCircle;
 	if (isCircle)
 	{
-		collider = new CircleCollider(pos, r);
+		//collider = new CircleCollider(&pos, r);
 	}
 	else
 	{
-		collider - new RectCollider(pos, 32, 32);
+		//collider = new RectCollider(&pos, 32, 32);
 	}
 }
 
@@ -32,13 +32,21 @@ Player::Player(int width, int height, VectorI2 pos)
 	position = pos;
 	targetVelocity = { 0, 0 };
 	screenPosition = { 0, 0 };
-	widht = width;
+	width = width;
 	height = height;
+	if (isCircle)
+	{
+		//collider = new CircleCollider(&pos, r);
+	}
+	else
+	{
+		//collider - new RectCollider(&pos, 32, 32);
+	}
 }
 
 Player::~Player()
 {
-	delete collider;
+	//delete collider;
 }
 
 #pragma region setters/getters
@@ -93,7 +101,7 @@ void Player::updatePlayerPosition()
 
 void Player::CircleCircleCollision(Player otherPlayer)
 {
-	VectorF2 distance = { 
+	VectorF2 distance = {
 		abs((position.x + r / 2.0f) - (otherPlayer.position.x + otherPlayer.r / 2.0f)),
 		abs((position.y + r / 2.0f) - (otherPlayer.position.y + otherPlayer.r / 2.0f)) };
 	float length = sqrt(distance.x * distance.x + distance.y * distance.y);
@@ -114,12 +122,46 @@ void Player::CircleCircleCollision(Player otherPlayer)
 	}
 }
 
-void Player::RectRectCollision(Player otherPlayer) {
-	if (this->isCircle && otherPlayer.isCircle) {
-		if (true)
-		{
 
+
+void Player::RectRectCollision(Wall otherPlayer) {
+	if (!this->isCircle && !otherPlayer.isCircle) {
+		float left = position.x + width - otherPlayer.position.x;
+		float right = otherPlayer.position.x + otherPlayer.width - position.x;
+		float top = position.y + height - otherPlayer.position.y;
+		float bottom = otherPlayer.position.y + otherPlayer.height - position.y;
+
+		if (left > 0 && right > 0 && top > 0 && bottom > 0) {
+			printf("Collision\n");
+			printf("x, y: (%d, %d)f\n\n", this->position.x, this->position.y);
+			printf("wall (%d, %d)\n\n", otherPlayer.getPosition().x, otherPlayer.getPosition().y);
+			// Znajdü wektor separacji
+			VectorI2 separation;
+
+			if (left < right) {
+				separation.x = -left;
+			}
+			else {
+				separation.x = right;
+			}
+
+			if (top < bottom) {
+				separation.y = -top;
+			}
+			else {
+				separation.y = bottom;
+			}
+
+			if (abs(separation.x) < abs(separation.y)) {
+				position.x += separation.x;
+				velocity.x = 0; 
+			}
+			else {
+				position.y += separation.y;
+				velocity.y = 0; 
+			}
 		}
+
 	}
 }
 
@@ -156,17 +198,24 @@ void Player::handleWallCollision()
 
 void Player::separate(Player otherPlayer)
 {
-	VectorF2 distance = {
-		abs((position.x + r / 2.0f) - (otherPlayer.position.x + otherPlayer.r / 2.0f)),
-		abs((position.y + r / 2.0f) - (otherPlayer.position.y + otherPlayer.r / 2.0f)) };
-	float length = sqrt(distance.x * distance.x + distance.y * distance.y);
-
-	if (length < r + otherPlayer.r)
+	if (this->isCircle && otherPlayer.isCircle)
 	{
-		float overlap = 0.5f * (length - r - otherPlayer.getRadius());
-		VectorF2 localDistance = { position.x - otherPlayer.getPosition().x, position.y - otherPlayer.getPosition().y };
-		position.x -= overlap * localDistance.x / length;
-		position.y -= overlap * localDistance.y / length;
+		VectorF2 distance = {
+			abs((position.x + r / 2.0f) - (otherPlayer.position.x + otherPlayer.r / 2.0f)),
+			abs((position.y + r / 2.0f) - (otherPlayer.position.y + otherPlayer.r / 2.0f)) };
+		float length = sqrt(distance.x * distance.x + distance.y * distance.y);
+
+		if (length < r + otherPlayer.r)
+		{
+			float overlap = 0.5f * (length - r - otherPlayer.getRadius());
+			VectorF2 localDistance = { position.x - otherPlayer.getPosition().x, position.y - otherPlayer.getPosition().y };
+			position.x -= overlap * localDistance.x / length;
+			position.y -= overlap * localDistance.y / length;
+		}
+	}
+	else if (!this->isCircle && !otherPlayer.isCircle)
+	{
+		
 	}
 }
 

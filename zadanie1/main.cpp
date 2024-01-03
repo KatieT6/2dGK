@@ -1,3 +1,5 @@
+#pragma once
+
 #include <SDL.h>
 #include <SDL_image.h>
 #include <stdio.h>
@@ -7,6 +9,9 @@
 #include "lib/MapLoader.h"
 #include "lib/Player.h"
 
+/// <summary>
+/// trzeba naprawiæ kamere tak ¿eby relatywna pozycja by³a git
+/// </summary>
 
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 640;
@@ -19,6 +24,8 @@ int maxX, maxY;
 
 bool isSeparation = false;
 bool isBouncing = false;
+
+int velocityOfPlayer = 4;
 
 #pragma region SDL
 
@@ -47,6 +54,8 @@ SDL_Texture* brickTexture = NULL;
 #pragma endregion
 
 std::vector<Circle> circles;
+std::vector<Wall>* ListWalls = new std::vector<Wall>();
+
 
 bool init();
 
@@ -70,6 +79,7 @@ void playerInCameraWidth(SDL_Rect* camera, Player* player1, Player* player2);
 void close();
 
 void update(int player1Velocity, int player2Velocity, Player* p1, Player* p2);
+void updatePlayersCollision(Player* player1, Player* player2, std::vector<Wall>* walls);
 float smoothingMotion(float targetSpeed, float smooth, float velocity);
 
 
@@ -97,12 +107,12 @@ int main(int argc, char* args[])
 
 		camera = new SDL_Rect
 		{
-			SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2,
+			0, 0,
 			SCREEN_WIDTH,
 			SCREEN_HEIGHT
 		};
 
-		int velocityOfPlayer = 4;
+		
 		Player player1 = Player();
 		VectorI2 v = { SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };
 		player1.setPosition(v);
@@ -112,7 +122,7 @@ int main(int argc, char* args[])
 
 		snappingCamera = new SDL_Rect
 		{
-			SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2,
+			0, 0,
 			SCREEN_WIDTH / 4,
 			SCREEN_HEIGHT / 4
 		};
@@ -153,8 +163,8 @@ int main(int argc, char* args[])
 				{
 					mouseX = e.motion.x;
 					mouseY = e.motion.y;
-					printf("We got a motion event.\n");
-					printf("Current mouse position is: (%d, %d)\n", e.motion.x, e.motion.y);
+					//printf("We got a motion event.\n");
+					//printf("Current mouse position is: (%d, %d)\n", e.motion.x, e.motion.y);
 				}
 
 			}
@@ -176,11 +186,12 @@ int main(int argc, char* args[])
 			for (int i = 0; i < MAP_HEIGHT / 32; i++) {
 				std::string line = levelMap.at(i);
 				for (int j = 0; j < MAP_WIDTH / 32; j++) {
-					drawElement((j * 32 - camera->x), (i * 32 - camera->y), line.at(j), textures, gRenderer);
+					drawElement((j * 32 - camera->x), (i * 32 - camera->y), line.at(j), textures, gRenderer, ListWalls, j * 32, i * 32);
 				}
 			}
 			//updatePlayerPosition(fillRect1, camera, velocityOfRect);
-			update(velocityOfPlayer, velocityOfPlayer, &player1, &player2);
+			//update(velocityOfPlayer, velocityOfPlayer, &player1, &player2);
+			updatePlayersCollision(&player1, &player2, ListWalls);
 			drawPlayerWithTextures(camera, playerTexture, &player1);
 			drawPlayerWithTextures(camera, playerAmongusTexture, &player2);
 
@@ -196,6 +207,7 @@ int main(int argc, char* args[])
 
 			//Update screen
 			SDL_RenderPresent(gRenderer);
+			ListWalls->clear();
 
 			if (desiredFrameTime > deltaTime)
 			{
@@ -261,7 +273,31 @@ bool init()
 	return success;
 }
 
+void updatePlayersCollision(Player* player1, Player* player2, std::vector<Wall>* walls) {
+		update(velocityOfPlayer, velocityOfPlayer, player1, player2);
 
+			for (int j = 0; j < walls->size(); j++)
+			{
+				//Player player; //placeholder
+				//player1->separate(player); /// tu zmieniæ na walls
+				//player2->separate(player); /// tu zmieniæ na walls
+			}
+
+		//}
+
+		//if (isBouncing) {
+			for (int j = 0; j < walls->size(); j++)
+			{
+				player1->RectRectCollision(walls->at(j));
+				player2->RectRectCollision(walls->at(j));
+			}
+		//}
+
+
+		//players->at(i).handleWallCollision();
+
+	//}
+}
 
 std::vector<Player> createPlayers(int quantity, int r, bool isCircle) {
 	Player player;
@@ -288,7 +324,6 @@ std::vector<Player> createPlayers(int quantity, int r, bool isCircle) {
 
 void updateCirclesPlayers(std::vector<Player>* player) {
 	for (int i = 0; i < player->size(); i++) {
-		player->at(i).updatePlayerPosition();
 		updateCircle(&player->at(i));
 
 
@@ -370,9 +405,9 @@ void updateRect(Player* p1) {
 //Position locking
 void updateCamera(SDL_Rect* camera, Player* p1, Player* p2, int* target) {
 
-	printf("Camera x: %d\n", camera->x);
-	printf("Player1 x: %d\n", p1->getPosition().x);
-	printf("Player2 x: %d\n", p2->getPosition().x);
+	printf("Camera (x, y): %d %d\n", camera->x, camera->y);
+	printf("Player1 (x, y): %d %d\n", p1->getPosition().x, p1->getPosition().y);
+	printf("Player2 (x, y): %d %d\n", p2->getPosition().x, p2->getPosition().y);
 	float offsetRight1 = camera->x + SCREEN_WIDTH / 2 - SCREEN_WIDTH / 3 - p1->getPosition().x - 16;
 	float offsetLeft1 = camera->x + SCREEN_WIDTH / 2 + SCREEN_WIDTH / 3 - p1->getPosition().x - 16;
 	float offsetRight2 = camera->x + SCREEN_WIDTH / 2 - SCREEN_WIDTH / 3 - p2->getPosition().x - 16;
@@ -382,7 +417,7 @@ void updateCamera(SDL_Rect* camera, Player* p1, Player* p2, int* target) {
 	float deltaY = p1->getPosition().y - p2->getPosition().y;
 	float distance = sqrt(deltaX * deltaX + deltaY * deltaY);
 
-	printf("distance x: %f\n", distance);
+	//printf("distance x: %f\n", distance);
 
 
 	if (abs(offsetRight1) >= snappingCamera->x || abs(offsetRight2) >= snappingCamera->x) {
@@ -445,14 +480,14 @@ void update(int player1Velocity, int player2Velocity, Player* p1, Player* p2)
 		position = { p1->getPosition().x, p1->getPosition().y - player1Velocity };
 		p1->setPosition(position);
 
-		printf("We got a motion event.\n UP buton pressed");
+		//printf("We got a motion event.\n UP buton pressed");
 	}
 
 	if (currentKeyStates[SDL_SCANCODE_DOWN])
 	{
 		position = { p1->getPosition().x, p1->getPosition().y + player1Velocity };
 		p1->setPosition(position);
-		printf("We got a motion event.\n DOWN buton pressed");
+		//printf("We got a motion event.\n DOWN buton pressed");
 
 	}
 
@@ -460,7 +495,7 @@ void update(int player1Velocity, int player2Velocity, Player* p1, Player* p2)
 	{
 		position = { p1->getPosition().x - player1Velocity, p1->getPosition().y };
 		p1->setPosition(position);
-		printf("We got a motion event.\n LEFT buton pressed");
+		//printf("We got a motion event.\n LEFT buton pressed");
 
 	}
 
@@ -468,7 +503,7 @@ void update(int player1Velocity, int player2Velocity, Player* p1, Player* p2)
 	{
 		position = { p1->getPosition().x + player1Velocity, p1->getPosition().y };
 		p1->setPosition(position);
-		printf("We got a motion event.\n RIGHT buton pressed");
+		//printf("We got a motion event.\n RIGHT buton pressed");
 
 	}
 
@@ -476,14 +511,14 @@ void update(int player1Velocity, int player2Velocity, Player* p1, Player* p2)
 	{
 		position = { p2->getPosition().x , p2->getPosition().y - player2Velocity };
 		p2->setPosition(position);
-		printf("We got a motion event.\n UP buton pressed");
+		//printf("We got a motion event.\n UP buton pressed");
 	}
 
 	if (currentKeyStates[SDL_SCANCODE_S])
 	{
 		position = { p2->getPosition().x , p2->getPosition().y + player2Velocity };
 		p2->setPosition(position);
-		printf("We got a motion event.\n DOWN buton pressed");
+		//printf("We got a motion event.\n DOWN buton pressed");
 
 	}
 
@@ -491,7 +526,7 @@ void update(int player1Velocity, int player2Velocity, Player* p1, Player* p2)
 	{
 		position = { p2->getPosition().x - player2Velocity, p2->getPosition().y };
 		p2->setPosition(position);
-		printf("We got a motion event.\n LEFT buton pressed");
+		//printf("We got a motion event.\n LEFT buton pressed");
 
 	}
 
@@ -499,7 +534,7 @@ void update(int player1Velocity, int player2Velocity, Player* p1, Player* p2)
 	{
 		position = { p2->getPosition().x + player2Velocity, p2->getPosition().y };
 		p2->setPosition(position);
-		printf("We got a motion event.\n RIGHT buton pressed");
+		//printf("We got a motion event.\n RIGHT buton pressed");
 
 	}
 
