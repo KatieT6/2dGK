@@ -54,7 +54,8 @@ SDL_Texture* brickTexture = NULL;
 #pragma endregion
 
 std::vector<Circle> circles;
-std::vector<Wall>* ListWalls = new std::vector<Wall>();
+std::vector<Wall*> ListWalls;
+std::vector<VectorI2>* Positions;
 
 
 bool init();
@@ -66,20 +67,23 @@ void drawCirclesPlayer(std::vector<Player>* player);
 
 void handleWallColission(Player* player);
 
+VectorI2 randPlayerPosition(std::vector<VectorI2> positions);
+
 std::vector<Player> createPlayers(int quantity, int r, bool isCircle);
 void drawPlayerWithTextures(SDL_Rect* camera, SDL_Texture* playerTexture, Player* p);
 void drawCirclesPlayer(std::vector<Player>* player);
 
-void updateCamera(SDL_Rect* camera, Player* p1, Player* p2, int* target);
+void updateCamera(SDL_Rect* camera, Player* p1, Player* p2, int* targetX, int *targetY);
 void cameraInBounds(SDL_Rect* camera);
 void playerInBounds(Player* player);
 void playerInCameraWidth(SDL_Rect* camera, Player* player1, Player* player2);
+bool checkCollision(SDL_Rect* a, SDL_Rect* b);
 
 
 void close();
 
 void update(int player1Velocity, int player2Velocity, Player* p1, Player* p2);
-void updatePlayersCollision(Player* player1, Player* player2, std::vector<Wall>* walls);
+void updatePlayersCollision(Player* player1, Player* player2, std::vector<Wall*> walls);
 float smoothingMotion(float targetSpeed, float smooth, float velocity);
 
 
@@ -105,12 +109,7 @@ int main(int argc, char* args[])
 		Uint64 deltaTime = 0;
 		Uint64 desiredFrameTime = 17;
 
-		camera = new SDL_Rect
-		{
-			0, 0,
-			SCREEN_WIDTH,
-			SCREEN_HEIGHT
-		};
+		
 
 		
 		Player player1 = Player();
@@ -120,6 +119,12 @@ int main(int argc, char* args[])
 		Player player2 = Player();
 		player2.setPosition(v);
 
+		camera = new SDL_Rect
+		{
+			0,0,
+			SCREEN_WIDTH,
+			SCREEN_HEIGHT
+		};
 		snappingCamera = new SDL_Rect
 		{
 			0, 0,
@@ -127,7 +132,8 @@ int main(int argc, char* args[])
 			SCREEN_HEIGHT / 4
 		};
 
-		int target = 0;
+		int targetX = 0;
+		int targetY = 0;
 		//Teksture for player
 		playerTexture = loadTextureFromTheSurface("res/textures/player.png", gRenderer);
 		playerAmongusTexture = loadTextureFromTheSurface("res/textures/player-amongus.png", gRenderer);
@@ -166,7 +172,6 @@ int main(int argc, char* args[])
 					//printf("We got a motion event.\n");
 					//printf("Current mouse position is: (%d, %d)\n", e.motion.x, e.motion.y);
 				}
-
 			}
 
 
@@ -182,20 +187,51 @@ int main(int argc, char* args[])
 
 			int numberOfColumns = SCREEN_WIDTH / 32;
 			int numberOfRows = SCREEN_HEIGHT / 32;
-
+			char sign;
+			int x, y;
 			for (int i = 0; i < MAP_HEIGHT / 32; i++) {
 				std::string line = levelMap.at(i);
 				for (int j = 0; j < MAP_WIDTH / 32; j++) {
-					drawElement((j * 32 - camera->x), (i * 32 - camera->y), line.at(j), textures, gRenderer, ListWalls, j * 32, i * 32);
+					
+					//drawElement((j * 32 - camera->x), (i * 32 - camera->y), line.at(j), textures, gRenderer, j * 32, i * 32);
+					sign = line.at(j);
+					x = j * 32 - camera->x;
+					y = i * 32 - camera->y;
+					int x_m = j * 32;
+					int y_m = i * 32;
+					SDL_Rect fillRect = { x, y,  32,  32 };
+					VectorI2* position = new VectorI2{ x_m, y_m };
+					VectorI2* possiblePositions;
+					if (sign == ';') {
+						possiblePositions = { x_m, y_m };
+						Positions->push_back(*possiblePositions);
+						SDL_RenderCopy(gRenderer, textures[0], NULL, &fillRect);
+					}
+					else if (sign == '#') {
+						SDL_RenderCopy(gRenderer, textures[1], NULL, &fillRect);
+					}
+					else if (sign == '-') {
+						SDL_RenderCopy(gRenderer, textures[2], NULL, &fillRect);
+					}
+					else if (sign == '=') {
+						SDL_RenderCopy(gRenderer, textures[3], NULL, &fillRect);
+						Wall* wall = new Wall(new VectorI2{ j * 32, i * 32 }, 32, 32);
+						ListWalls.push_back(wall);
+					}
 				}
 			}
+
+			randPlayerPosition(Positions);
+
+			/*player1.setPosition(possiblePositions);
+			player2.setPosition(possiblePositions);*/
 			//updatePlayerPosition(fillRect1, camera, velocityOfRect);
 			//update(velocityOfPlayer, velocityOfPlayer, &player1, &player2);
 			updatePlayersCollision(&player1, &player2, ListWalls);
 			drawPlayerWithTextures(camera, playerTexture, &player1);
 			drawPlayerWithTextures(camera, playerAmongusTexture, &player2);
 
-			updateCamera(camera, &player1, &player2, &target);
+			updateCamera(camera, &player1, &player2, &targetX, &targetY);
 			playerInCameraWidth(camera, &player1, &player2);
 			playerInBounds(&player1);
 			playerInBounds(&player2);
@@ -207,7 +243,11 @@ int main(int argc, char* args[])
 
 			//Update screen
 			SDL_RenderPresent(gRenderer);
-			ListWalls->clear();
+			for (Wall* wall : ListWalls) {
+				delete wall; // zwolnij pamiêæ dla ka¿dego obiektu Wall
+			}
+
+			ListWalls.clear(); // wyczyœæ wektor
 
 			if (desiredFrameTime > deltaTime)
 			{
@@ -273,31 +313,25 @@ bool init()
 	return success;
 }
 
-void updatePlayersCollision(Player* player1, Player* player2, std::vector<Wall>* walls) {
-		update(velocityOfPlayer, velocityOfPlayer, player1, player2);
 
-			for (int j = 0; j < walls->size(); j++)
-			{
-				//Player player; //placeholder
-				//player1->separate(player); /// tu zmieniæ na walls
-				//player2->separate(player); /// tu zmieniæ na walls
-			}
+void updatePlayersCollision(Player* player1, Player* player2, std::vector<Wall*> walls) {
+	update(velocityOfPlayer, velocityOfPlayer, player1, player2);
 
-		//}
+	for (int j = 0; j < walls.size(); j++)
+	{
+		//Player player; //placeholder
+		//player1->separate(player); /// tu zmieniæ na walls
+		//player2->separate(player); /// tu zmieniæ na walls
 
-		//if (isBouncing) {
-			for (int j = 0; j < walls->size(); j++)
-			{
-				player1->RectRectCollision(walls->at(j));
-				player2->RectRectCollision(walls->at(j));
-			}
-		//}
-
+		player1->RectRectCollision(walls.at(j));
+		player2->RectRectCollision(walls.at(j));
+	}
 
 		//players->at(i).handleWallCollision();
-
-	//}
 }
+		
+
+
 
 std::vector<Player> createPlayers(int quantity, int r, bool isCircle) {
 	Player player;
@@ -320,6 +354,51 @@ std::vector<Player> createPlayers(int quantity, int r, bool isCircle) {
 		players.push_back(player);
 	}
 	return players;
+}
+
+bool checkCollision(SDL_Rect* a, SDL_Rect* b)
+{
+	//The sides of the rectangles
+	int leftA, leftB;
+	int rightA, rightB;
+	int topA, topB;
+	int bottomA, bottomB;
+
+	//Calculate the sides of rect A
+	leftA = a->x;
+	rightA = a->x + a->w;
+	topA = a->y;
+	bottomA = a->y + a->h;
+
+	//Calculate the sides of rect B
+	leftB = b->x;
+	rightB = b->x + b->w;
+	topB = b->y;
+	bottomB = b->y + b->h;
+
+	//If any of the sides from A are outside of B
+	if (bottomA <= topB)
+	{
+		return false;
+	}
+
+	if (topA >= bottomB)
+	{
+		return false;
+	}
+
+	if (rightA <= leftB)
+	{
+		return false;
+	}
+
+	if (leftA >= rightB)
+	{
+		return false;
+	}
+
+	//If none of the sides from A are outside B
+	return true;
 }
 
 void updateCirclesPlayers(std::vector<Player>* player) {
@@ -370,6 +449,12 @@ void handleWallColission(Player* player) {
 	}
 }
 
+VectorI2 randPlayerPosition(std::vector<VectorI2>* positions) {
+	//losowanie pozycji gracza z listy
+	int index = rand() % positions->size();
+	VectorI2 position = positions->at(index);
+	return position;
+}
 
 
 #pragma region helper methods
@@ -403,7 +488,7 @@ void updateRect(Player* p1) {
 
 #pragma region old code
 //Position locking
-void updateCamera(SDL_Rect* camera, Player* p1, Player* p2, int* target) {
+void updateCamera(SDL_Rect* camera, Player* p1, Player* p2, int* targetX,int *targetY) {
 
 	printf("Camera (x, y): %d %d\n", camera->x, camera->y);
 	printf("Player1 (x, y): %d %d\n", p1->getPosition().x, p1->getPosition().y);
@@ -413,6 +498,11 @@ void updateCamera(SDL_Rect* camera, Player* p1, Player* p2, int* target) {
 	float offsetRight2 = camera->x + SCREEN_WIDTH / 2 - SCREEN_WIDTH / 3 - p2->getPosition().x - 16;
 	float offsetLeft2 = camera->x + SCREEN_WIDTH / 2 + SCREEN_WIDTH / 3 - p2->getPosition().x - 16;
 
+	float offsetUp1 = camera->y + SCREEN_HEIGHT / 2 - SCREEN_HEIGHT / 3 - p1->getPosition().y - 16;
+	float offsetDown1 = camera->y + SCREEN_HEIGHT / 2 + SCREEN_HEIGHT / 3 - p1->getPosition().y - 16;
+	float offsetUp2 = camera->y + SCREEN_HEIGHT / 2 - SCREEN_HEIGHT / 3 - p2->getPosition().y - 16;
+	float offsetDown2 = camera->y + SCREEN_HEIGHT / 2 + SCREEN_HEIGHT / 3 - p2->getPosition().y - 16;
+
 	float deltaX = p1->getPosition().x - p2->getPosition().x;
 	float deltaY = p1->getPosition().y - p2->getPosition().y;
 	float distance = sqrt(deltaX * deltaX + deltaY * deltaY);
@@ -421,16 +511,24 @@ void updateCamera(SDL_Rect* camera, Player* p1, Player* p2, int* target) {
 
 
 	if (abs(offsetRight1) >= snappingCamera->x || abs(offsetRight2) >= snappingCamera->x) {
-		*target = p1->getPosition().x - SCREEN_WIDTH / 2 + 16 - deltaX / 2;
+		*targetX = p1->getPosition().x - SCREEN_WIDTH / 2 + 16 - deltaX / 2;
 
 	}
 	else if (abs(offsetLeft1) >= snappingCamera->x || abs(offsetLeft2) >= snappingCamera->x) {
-		*target = p1->getPosition().x - SCREEN_WIDTH / 2 + 16 - deltaX / 2;
+		*targetX = p1->getPosition().x - SCREEN_WIDTH / 2 + 16 - deltaX / 2;
+	}
+
+	if (abs(offsetDown1) >= snappingCamera->y || abs(offsetDown2) >= snappingCamera->y) {
+		*targetY = p1->getPosition().y - SCREEN_HEIGHT / 2 + 16 - deltaY / 2;
+	}
+	else if (abs(offsetUp1) >= snappingCamera->y || abs(offsetUp2) >= snappingCamera->y) {
+		*targetY = p1->getPosition().y - SCREEN_HEIGHT / 2 + 16 - deltaY / 2;
 	}
 
 	float smooth = 0.92f;
-	camera->x = *target * (1.0f - smooth) + camera->x * smooth;
-	camera->y = p1->getPosition().y + 16 - SCREEN_HEIGHT / 2;
+	camera->x = *targetX * (1.0f - smooth) + camera->x * smooth;
+	camera->y = *targetY * (1.0f - smooth) + camera->y * smooth;
+	
 
 }
 
@@ -538,7 +636,11 @@ void update(int player1Velocity, int player2Velocity, Player* p1, Player* p2)
 
 	}
 
+
+
 }
+
+
 
 float smoothingMotion(float targetSpeed, float smooth, float velocity) {
 	return targetSpeed * (1 - smooth) + velocity * smooth;
@@ -568,16 +670,24 @@ void playerInCameraWidth(SDL_Rect* camera, Player* player1, Player* player2) {
 		VectorI2 v = { camera->x + 8, player2->getPosition().y };
 		player2->setPosition(v);
 	}
-
-
-	if (player2->getPosition().y <= camera->y) {
-		VectorI2 v = { player2->getPosition().x, camera->y };
-		player2->setPosition(v);
+	if (player1->getPosition().y >= camera->y + SCREEN_HEIGHT - 32) {
+				VectorI2 v = { player1->getPosition().x, camera->y + SCREEN_HEIGHT - 32 };
+		player1->setPosition(v);
 	}
+	if (player1->getPosition().y <= camera->y + 32) {
+		VectorI2 v = { player1->getPosition().x, camera->y + 8 };
+		player1->setPosition(v);
+	}
+
 	if (player2->getPosition().y >= camera->y + SCREEN_HEIGHT - 32) {
 		VectorI2 v = { player2->getPosition().x, camera->y + SCREEN_HEIGHT - 32 };
 		player2->setPosition(v);
 	}
+	if (player2->getPosition().y <= camera->y + 32) {
+		VectorI2 v = { player2->getPosition().x, camera->y + 8 };
+		player2->setPosition(v);
+	}
+
 }
 
 #pragma endregion

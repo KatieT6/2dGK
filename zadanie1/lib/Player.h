@@ -18,6 +18,7 @@ private:
 	int r = 0;
 	int width = 0;
 	int height = 0;
+	SDL_Rect* collider;
 
 	//Collider* collider;
 	
@@ -36,6 +37,8 @@ public:
 	VectorF2 getVelocity();
 	int getRadius();
 
+
+	SDL_Rect* getCollider();
 	void setPosition(VectorI2& pos);
 	void setVelocity(VectorF2& vel);
 	void setTargetVelocity(VectorF2 &vel);
@@ -43,7 +46,7 @@ public:
 
 	void updatePlayerPosition();  
 	void CircleCircleCollision(Player otherPlayer);
-	void RectRectCollision(Wall otherPlayer);
+	void RectRectCollision(Wall* otherPlayer);
 	void handleWallCollision();
 	void separate(Player otherPlayer);
 };
