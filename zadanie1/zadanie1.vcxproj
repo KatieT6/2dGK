@@ -28,6 +28,7 @@
     <ClInclude Include="lib\Circle.h" />
     <ClInclude Include="lib\Collider.h" />
     <ClInclude Include="lib\MapLoader.h" />
+    <ClInclude Include="lib\Point.h" />
     <ClInclude Include="lib\Vector.h" />
     <ClInclude Include="lib\Player.h" />
     <ClInclude Include="lib\Wall.h" />

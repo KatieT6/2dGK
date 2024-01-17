@@ -12,14 +12,17 @@ public:
     VectorI2 position;
     //Collider* collider;
     bool isCircle;
+    bool isPoint;
+    bool isChecked;
     int width = 32;
     int height = 32;
     SDL_Rect* collider;
     
-    Wall(VectorI2* pos, int width, int height) : position(*pos), width(width), height(height)
+    Wall(VectorI2* pos, int width, int height, bool isPoint) : position(*pos), width(width), height(height), isPoint(isPoint)
     {
     	//collider = new RectCollider(pos, width, height);
         isCircle = false;
+        isChecked = false;
         collider = new SDL_Rect{ position.x, position.y, width, height };
     }
 

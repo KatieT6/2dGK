@@ -23,4 +23,5 @@ struct VectorF3
 	float x, y, z;
 };
 
+
 #endif // !VECTOR_H

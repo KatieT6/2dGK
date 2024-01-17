@@ -18,7 +18,7 @@ private:
 	int r = 0;
 	int width = 0;
 	int height = 0;
-	SDL_Rect* collider;
+	//SDL_Rect* collider;
 
 	//Collider* collider;
 	
@@ -47,7 +47,10 @@ public:
 	void updatePlayerPosition();  
 	void CircleCircleCollision(Player otherPlayer);
 	void RectRectCollision(Wall* otherPlayer);
+	void CircleRectCollision(Wall* otherPlayer);
 	void handleWallCollision();
+	float clamp(float value, float min, float max);
 	void separate(Player otherPlayer);
+	void separate(Wall* otherPlayer);
 };
 

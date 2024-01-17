@@ -13,16 +13,10 @@ Player::Player()
 
 Player::Player(bool isCircle, int r, VectorI2 pos)
 {
-	position = pos;
-	r = r;
-	isCircle = isCircle;
-	if (isCircle) {
-		collider = new SDL_Rect{ position.x, position.y, r, r };
-	}
-	else {
-		collider = new SDL_Rect{ position.x, position.y, width, height };
-	}
-
+	VectorI2 temp = {pos.x - r, pos.y - r};
+	position = temp;
+	this->r = r;
+	this->isCircle = isCircle;
 }
 
 Player::Player(int width, int height, VectorI2 pos)
@@ -33,14 +27,6 @@ Player::Player(int width, int height, VectorI2 pos)
 	screenPosition = { 0, 0 };
 	width = width;
 	height = height;
-	if (!isCircle)
-	{
-		collider = new SDL_Rect{position.x, position.y, width, height };
-	}
-	else
-	{
-		collider = new SDL_Rect{ position.x, position.y, r, r };
-	}
 }
 
 Player::~Player()
@@ -72,10 +58,10 @@ int Player::getRadius()
 	return r;
 }
 
-SDL_Rect* Player::getCollider()
-{
-	return collider;
-}
+//SDL_Rect* Player::getCollider()
+//{
+//	return collider;
+//}
 
 void Player::setPosition(VectorI2& pos)
 {
@@ -132,16 +118,16 @@ void Player::CircleCircleCollision(Player otherPlayer)
 
 void Player::RectRectCollision(Wall* otherPlayer) {
 	if (!this->isCircle && !otherPlayer->isCircle) {
-		float left = position.x - width - otherPlayer->position.x;
-		float right = otherPlayer->position.x + otherPlayer->width - position.x;
-		float top = position.y - height - otherPlayer->position.y;
-		float bottom = otherPlayer->position.y + otherPlayer->height + otherPlayer->height - position.y;
+		float left = position.x + 2 * width - otherPlayer->position.x;
+		float right = otherPlayer->position.x + 2 * otherPlayer->width - position.x;
+		float top = position.y + 2 * height - otherPlayer->position.y;
+		float bottom = otherPlayer->position.y + 2 * otherPlayer->height - position.y;
 
 		
 		if (left > 0 && right > 0 && top > 0 && bottom > 0) {
-			printf("Collision\n");
-			printf("x, y: (%d, %d)f\n\n", this->position.x, this->position.y);
-			printf("wall (%d, %d)\n\n", otherPlayer->getPosition().x, otherPlayer->getPosition().y);
+			printf(" Rect Rect Collision -- player 2 \n");
+			//printf("x, y: (%d, %d)f\n\n", this->position.x, this->position.y);
+			//printf("wall (%d, %d)\n\n", otherPlayer->getPosition().x, otherPlayer->getPosition().y);
 			// Znajdü wektor separacji
 			VectorI2 separation;
 
@@ -167,8 +153,66 @@ void Player::RectRectCollision(Wall* otherPlayer) {
 				position.y += separation.y;
 				velocity.y = 0; 
 			}
+
 		}
 
+	}
+}
+
+void Player::CircleRectCollision(Wall* otherPlayer)
+{
+	if (this->isCircle == true && otherPlayer->isCircle == false)
+	{
+		float left = position.x + 2 * width - otherPlayer->position.x;
+		float right = otherPlayer->position.x + 2 * otherPlayer->width - position.x;
+		float top = position.y + 2 * height - otherPlayer->position.y;
+		float bottom = otherPlayer->position.y + 2 * otherPlayer->height - position.y;
+
+		VectorF2 f = { clamp(this->getPosition().x, left, right), clamp(this->getPosition().y, top, bottom) };
+		float distance = sqrt((f.x - this->getPosition().x) * (f.x - this->getPosition().x)
+			+ (f.y - this->getPosition().y) * (f.y - this->getPosition().y));
+		if (distance < this->getRadius())
+		{
+		printf("Circle rect collision -- player 1");
+			if (static_cast<float>(f.x) == this->getPosition().x && static_cast<float>(f.y) == this->getPosition().y) {
+				// Znajdü wektor separacji
+				VectorI2 separation;
+
+				if (left < right) {
+					separation.x = -left;
+				}
+				else {
+					separation.x = right;
+				}
+
+				if (top < bottom) {
+					separation.y = -top;
+				}
+				else {
+					separation.y = bottom;
+				}
+
+				if (abs(separation.x) < abs(separation.y)) {
+					//position.x += separation.x;
+					velocity.x = 0;
+				}
+				else {
+					//position.y += separation.y;
+					velocity.y = 0;
+				}
+				printf("RECT COLLSION");
+			}
+			else
+			{
+				VectorF2 tmp = { this->getPosition().x - f.x, this->getPosition().y - f.y };
+				VectorF2 separation = { tmp.x / distance, tmp.y / distance };
+				float diff = this->getRadius() - distance;
+				VectorF2 separationVector = { separation.x * diff, separation.y * diff };
+				//this->position.x -= separationVector.x;
+				//this->position.y -= separationVector.y;
+				printf("CIRCLE COLLISION");
+			}
+		}
 	}
 }
 
@@ -203,6 +247,19 @@ void Player::handleWallCollision()
 	}
 }
 
+float Player::clamp(float value, float min, float max)
+{
+	if (value < min) {
+		return min;
+	}
+	else if (value > max) {
+		return max;
+	}
+	else {
+		return value;
+	}
+}
+
 void Player::separate(Player otherPlayer)
 {
 	if (this->isCircle && otherPlayer.isCircle)
@@ -220,9 +277,23 @@ void Player::separate(Player otherPlayer)
 			position.y -= overlap * localDistance.y / length;
 		}
 	}
-	else if (!this->isCircle && !otherPlayer.isCircle)
-	{
-		
-	}
 }
+
+//void Player::separate(Wall* otherPlayer)
+//{
+//	VectorF2 distance = {
+//			abs((position.x + r / 2.0f) - (otherPlayer.position.x + otherPlayer.r / 2.0f)),
+//			abs((position.y + r / 2.0f) - (otherPlayer.position.y + otherPlayer.r / 2.0f)) };
+//	float length = sqrt(distance.x * distance.x + distance.y * distance.y);
+//
+//	if (length < r + otherPlayer.r)
+//	{
+//		float overlap = 0.5f * (length - r - otherPlayer.getRadius());
+//		VectorF2 localDistance = { position.x - otherPlayer.getPosition().x, position.y - otherPlayer.getPosition().y };
+//		position.x -= overlap * localDistance.x / length;
+//		position.y -= overlap * localDistance.y / length;
+//	}
+//}
+
+
 

@@ -8,6 +8,7 @@
 #include "lib/Circle.h"
 #include "lib/MapLoader.h"
 #include "lib/Player.h"
+#include "lib/Point.h"
 
 /// <summary>
 /// trzeba naprawiæ kamere tak ¿eby relatywna pozycja by³a git
@@ -18,6 +19,9 @@ const int SCREEN_HEIGHT = 640;
 
 const int MAP_WIDTH = 60 * 32;
 const int MAP_HEIGHT = 40 * 32;
+
+int maxPoints = 0;
+int actualPoints = 0;
 
 int mouseX, mouseY;
 int maxX, maxY;
@@ -51,12 +55,16 @@ SDL_Texture* wallTexture = NULL;
 
 SDL_Texture* brickTexture = NULL;
 
+SDL_Texture* checkPointTexture = NULL;
+
 #pragma endregion
 
 std::vector<Circle> circles;
 std::vector<Wall*> ListWalls;
-std::vector<VectorI2>* Positions;
+std::vector<Point*> ListPoints;
+std::vector<VectorI2> Positions;
 
+bool firstTime = true;
 
 bool init();
 
@@ -88,6 +96,7 @@ float smoothingMotion(float targetSpeed, float smooth, float velocity);
 
 
 
+
 int main(int argc, char* args[])
 {
 	//Start up SDL and create window
@@ -110,13 +119,11 @@ int main(int argc, char* args[])
 		Uint64 desiredFrameTime = 17;
 
 		
-
-		
-		Player player1 = Player();
 		VectorI2 v = { SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };
-		player1.setPosition(v);
+		Player player1 = Player(32, 32, v);
+		Player player2 = Player(32, 32, v);
+		//player1.setPosition(v);
 
-		Player player2 = Player();
 		player2.setPosition(v);
 
 		camera = new SDL_Rect
@@ -137,6 +144,7 @@ int main(int argc, char* args[])
 		//Teksture for player
 		playerTexture = loadTextureFromTheSurface("res/textures/player.png", gRenderer);
 		playerAmongusTexture = loadTextureFromTheSurface("res/textures/player-amongus.png", gRenderer);
+		checkPointTexture = loadTextureFromTheSurface("res/textures/point.png", gRenderer);
 
 
 		//Tekstures from map loadres
@@ -149,6 +157,7 @@ int main(int argc, char* args[])
 		textures.push_back(skyTexture);
 		textures.push_back(wallTexture);
 		textures.push_back(brickTexture);
+		textures.push_back(checkPointTexture);
 
 		//While application is running
 		while (!quit)
@@ -189,6 +198,8 @@ int main(int argc, char* args[])
 			int numberOfRows = SCREEN_HEIGHT / 32;
 			char sign;
 			int x, y;
+			int x_m;
+			int y_m;
 			for (int i = 0; i < MAP_HEIGHT / 32; i++) {
 				std::string line = levelMap.at(i);
 				for (int j = 0; j < MAP_WIDTH / 32; j++) {
@@ -197,14 +208,13 @@ int main(int argc, char* args[])
 					sign = line.at(j);
 					x = j * 32 - camera->x;
 					y = i * 32 - camera->y;
-					int x_m = j * 32;
-					int y_m = i * 32;
+					
 					SDL_Rect fillRect = { x, y,  32,  32 };
-					VectorI2* position = new VectorI2{ x_m, y_m };
-					VectorI2* possiblePositions;
+					VectorI2 position = {j * 32 - 32, i * 32 - 32 };
+					//VectorI2* possiblePositions;
 					if (sign == ';') {
-						possiblePositions = { x_m, y_m };
-						Positions->push_back(*possiblePositions);
+						//possiblePositions = { x_m, y_m };
+						Positions.push_back(position);
 						SDL_RenderCopy(gRenderer, textures[0], NULL, &fillRect);
 					}
 					else if (sign == '#') {
@@ -215,13 +225,29 @@ int main(int argc, char* args[])
 					}
 					else if (sign == '=') {
 						SDL_RenderCopy(gRenderer, textures[3], NULL, &fillRect);
-						Wall* wall = new Wall(new VectorI2{ j * 32, i * 32 }, 32, 32);
+						Wall* wall = new Wall(new VectorI2{ j * 32 - 32, i * 32 - 32}, 32, 32, false);
 						ListWalls.push_back(wall);
+					}
+					else if (sign == 'P')
+					{
+						SDL_RenderCopy(gRenderer, textures[4], NULL, &fillRect);
+						Wall* wall = new Wall(new VectorI2{ j * 32 - 32, i * 32 - 32 }, 32, 32, false);
+						ListWalls.push_back(wall);
+						maxPoints++;
 					}
 				}
 			}
 
-			randPlayerPosition(Positions);
+			//VectorI2 rand = randPlayerPosition(Positions);
+			VectorI2 rand = { 32, 64 };
+
+			if (firstTime)
+			{
+				player1.setPosition(rand);
+				player2.setPosition(rand);
+				firstTime = false;
+			}
+
 
 			/*player1.setPosition(possiblePositions);
 			player2.setPosition(possiblePositions);*/
@@ -237,7 +263,7 @@ int main(int argc, char* args[])
 			playerInBounds(&player2);
 			cameraInBounds(camera);
 
-
+			
 
 			//SDL_RenderCopy(gRenderer, playerTexture, NULL, fillRect1);
 
@@ -252,6 +278,11 @@ int main(int argc, char* args[])
 			if (desiredFrameTime > deltaTime)
 			{
 				SDL_Delay(desiredFrameTime - deltaTime);
+			}
+
+			if (maxPoints == actualPoints)
+			{
+				printf("YOU WON!!");
 			}
 		}
 
@@ -323,6 +354,7 @@ void updatePlayersCollision(Player* player1, Player* player2, std::vector<Wall*>
 		//player1->separate(player); /// tu zmieniæ na walls
 		//player2->separate(player); /// tu zmieniæ na walls
 
+		//player1->RectRectCollision(walls.at(j));
 		player1->RectRectCollision(walls.at(j));
 		player2->RectRectCollision(walls.at(j));
 	}
@@ -449,10 +481,10 @@ void handleWallColission(Player* player) {
 	}
 }
 
-VectorI2 randPlayerPosition(std::vector<VectorI2>* positions) {
+VectorI2 randPlayerPosition(std::vector<VectorI2> positions) {
 	//losowanie pozycji gracza z listy
-	int index = rand() % positions->size();
-	VectorI2 position = positions->at(index);
+	int index = rand() % positions.size();
+	VectorI2 position = positions.at(index);
 	return position;
 }
 
@@ -490,9 +522,9 @@ void updateRect(Player* p1) {
 //Position locking
 void updateCamera(SDL_Rect* camera, Player* p1, Player* p2, int* targetX,int *targetY) {
 
-	printf("Camera (x, y): %d %d\n", camera->x, camera->y);
-	printf("Player1 (x, y): %d %d\n", p1->getPosition().x, p1->getPosition().y);
-	printf("Player2 (x, y): %d %d\n", p2->getPosition().x, p2->getPosition().y);
+	//printf("Camera (x, y): %d %d\n", camera->x, camera->y);
+	//printf("Player1 (x, y): %d %d\n", p1->getPosition().x, p1->getPosition().y);
+	//printf("Player2 (x, y): %d %d\n", p2->getPosition().x, p2->getPosition().y);
 	float offsetRight1 = camera->x + SCREEN_WIDTH / 2 - SCREEN_WIDTH / 3 - p1->getPosition().x - 16;
 	float offsetLeft1 = camera->x + SCREEN_WIDTH / 2 + SCREEN_WIDTH / 3 - p1->getPosition().x - 16;
 	float offsetRight2 = camera->x + SCREEN_WIDTH / 2 - SCREEN_WIDTH / 3 - p2->getPosition().x - 16;
