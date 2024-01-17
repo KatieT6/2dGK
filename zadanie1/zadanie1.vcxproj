@@ -32,6 +32,7 @@
     <ClInclude Include="lib\Vector.h" />
     <ClInclude Include="lib\Player.h" />
     <ClInclude Include="lib\Wall.h" />
+    <ClInclude Include="Score.h" />
     <ClInclude Include="Values.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

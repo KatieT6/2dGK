@@ -51,6 +51,7 @@ public:
 	void handleWallCollision();
 	float clamp(float value, float min, float max);
 	void separate(Player otherPlayer);
-	void separate(Wall* otherPlayer);
+	void separate(Player* player, float tileX, float tileY, VectorF2 closestPoint);
+	void separate(Player* player, Wall* otherWall, VectorF2 closestPoint);
 };
 

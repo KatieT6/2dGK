@@ -159,62 +159,82 @@ void Player::RectRectCollision(Wall* otherPlayer) {
 	}
 }
 
-void Player::CircleRectCollision(Wall* otherPlayer)
+
+bool checkCircleRectCollision(Player* circle, Wall* rect, bool collide)
 {
-	if (this->isCircle == true && otherPlayer->isCircle == false)
-	{
-		float left = position.x + 2 * width - otherPlayer->position.x;
-		float right = otherPlayer->position.x + 2 * otherPlayer->width - position.x;
-		float top = position.y + 2 * height - otherPlayer->position.y;
-		float bottom = otherPlayer->position.y + 2 * otherPlayer->height - position.y;
+	VectorF2 closestPoint;
+	closestPoint.x = clamp(player->position.x, tileXIndex * TILE_SIZE, tileXIndex * TILE_SIZE + TILE_SIZE);
+	closestPoint.y = clamp(player->position.y, tileYIndex * TILE_SIZE, tileYIndex * TILE_SIZE + TILE_SIZE);
 
-		VectorF2 f = { clamp(this->getPosition().x, left, right), clamp(this->getPosition().y, top, bottom) };
-		float distance = sqrt((f.x - this->getPosition().x) * (f.x - this->getPosition().x)
-			+ (f.y - this->getPosition().y) * (f.y - this->getPosition().y));
-		if (distance < this->getRadius())
-		{
-		printf("Circle rect collision -- player 1");
-			if (static_cast<float>(f.x) == this->getPosition().x && static_cast<float>(f.y) == this->getPosition().y) {
-				// Znajdü wektor separacji
-				VectorI2 separation;
+	float distance;
+	distance = sqrt(pow(player->position.x - closestPoint.x, 2) + pow(player->position.y - closestPoint.y, 2));
 
-				if (left < right) {
-					separation.x = -left;
-				}
-				else {
-					separation.x = right;
-				}
-
-				if (top < bottom) {
-					separation.y = -top;
-				}
-				else {
-					separation.y = bottom;
-				}
-
-				if (abs(separation.x) < abs(separation.y)) {
-					//position.x += separation.x;
-					velocity.x = 0;
-				}
-				else {
-					//position.y += separation.y;
-					velocity.y = 0;
-				}
-				printf("RECT COLLSION");
-			}
-			else
-			{
-				VectorF2 tmp = { this->getPosition().x - f.x, this->getPosition().y - f.y };
-				VectorF2 separation = { tmp.x / distance, tmp.y / distance };
-				float diff = this->getRadius() - distance;
-				VectorF2 separationVector = { separation.x * diff, separation.y * diff };
-				//this->position.x -= separationVector.x;
-				//this->position.y -= separationVector.y;
-				printf("CIRCLE COLLISION");
-			}
-		}
+	if (distance < player->radius) {
+		if (collide) separate(player, tileXIndex = rect->position.x, tileYIndex = rect->position.y, closestPoint);
+		return true;
+	}
+	else {
+		return false;
 	}
 }
+}
+
+//void Player::CircleRectCollision(Wall* otherPlayer)
+//{
+//	if (this->isCircle == true && otherPlayer->isCircle == false)
+//	{
+//		float left = position.x + 2 * width - otherPlayer->position.x;
+//		float right = otherPlayer->position.x + 2 * otherPlayer->width - position.x;
+//		float top = position.y + 2 * height - otherPlayer->position.y;
+//		float bottom = otherPlayer->position.y + 2 * otherPlayer->height - position.y;
+//
+//		VectorF2 f = { clamp(this->getPosition().x, left, right), clamp(this->getPosition().y, top, bottom) };
+//		float distance = sqrt((f.x - this->getPosition().x) * (f.x - this->getPosition().x)
+//			+ (f.y - this->getPosition().y) * (f.y - this->getPosition().y));
+//		if (distance < this->getRadius())
+//		{
+//		printf("Circle rect collision -- player 1");
+//			if (static_cast<float>(f.x) == this->getPosition().x && static_cast<float>(f.y) == this->getPosition().y) {
+//				// Znajdü wektor separacji
+//				VectorI2 separation;
+//
+//				if (left < right) {
+//					separation.x = -left;
+//				}
+//				else {
+//					separation.x = right;
+//				}
+//
+//				if (top < bottom) {
+//					separation.y = -top;
+//				}
+//				else {
+//					separation.y = bottom;
+//				}
+//
+//				if (abs(separation.x) < abs(separation.y)) {
+//					//position.x += separation.x;
+//					velocity.x = 0;
+//				}
+//				else {
+//					//position.y += separation.y;
+//					velocity.y = 0;
+//				}
+//				printf("RECT COLLSION");
+//			}
+//			else
+//			{
+//				VectorF2 tmp = { this->getPosition().x - f.x, this->getPosition().y - f.y };
+//				VectorF2 separation = { tmp.x / distance, tmp.y / distance };
+//				float diff = this->getRadius() - distance;
+//				VectorF2 separationVector = { separation.x * diff, separation.y * diff };
+//				//this->position.x -= separationVector.x;
+//				//this->position.y -= separationVector.y;
+//				printf("CIRCLE COLLISION");
+//			}
+//		}
+//	}
+//}
 
 void Player::handleWallCollision()
 {
@@ -279,21 +299,33 @@ void Player::separate(Player otherPlayer)
 	}
 }
 
-//void Player::separate(Wall* otherPlayer)
-//{
-//	VectorF2 distance = {
-//			abs((position.x + r / 2.0f) - (otherPlayer.position.x + otherPlayer.r / 2.0f)),
-//			abs((position.y + r / 2.0f) - (otherPlayer.position.y + otherPlayer.r / 2.0f)) };
-//	float length = sqrt(distance.x * distance.x + distance.y * distance.y);
-//
-//	if (length < r + otherPlayer.r)
-//	{
-//		float overlap = 0.5f * (length - r - otherPlayer.getRadius());
-//		VectorF2 localDistance = { position.x - otherPlayer.getPosition().x, position.y - otherPlayer.getPosition().y };
-//		position.x -= overlap * localDistance.x / length;
-//		position.y -= overlap * localDistance.y / length;
-//	}
-//}
+void Player:: separate(Player* player, float tileX, float tileY, VectorF2 closestPoint)
+{
+	VectorF2 separation{0, 0};
+	if (player->position.x == closestPoint.x && player->position.y == closestPoint.y) {
+		float left = player->position.x - tileX * 32 + player->r;
+		float right = tileX * 32 + 32 - player->position.x + player->r;
+		float top = player->position.y - tileY * 32 + player->r;
+		float bottom = tileY * 32 + 32 - player->position.y + player->r;
+
+
+
+		separation.x = left < right ? -left : right;
+		separation.y = top < bottom ? -top : bottom;
+	}
+	else {
+		separation.x = player->position.x - closestPoint.x;
+		separation.y = player->position.y - closestPoint.y;
+
+		float distance = sqrt(separation.x * separation.x + separation.y * separation.y);
+		float factor = (player->r - distance) / distance;
+
+		separation.x *= factor;
+		separation.y *= factor;
+	}
+	player->position.x += separation.x;
+	player->setPosition(player->position);
+}
 
 
 

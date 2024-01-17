@@ -19,6 +19,7 @@ const int SCREEN_HEIGHT = 640;
 
 const int MAP_WIDTH = 60 * 32;
 const int MAP_HEIGHT = 40 * 32;
+int currentMap = 0;
 
 int maxPoints = 0;
 int actualPoints = 0;
@@ -61,7 +62,7 @@ SDL_Texture* checkPointTexture = NULL;
 
 std::vector<Circle> circles;
 std::vector<Wall*> ListWalls;
-std::vector<Point*> ListPoints;
+std::vector<Wall*> ListPoints;
 std::vector<VectorI2> Positions;
 
 bool firstTime = true;
@@ -183,6 +184,22 @@ int main(int argc, char* args[])
 				}
 			}
 
+			if (actualPoints != maxPoints)
+			{ 
+				if (currentMap == 0) {
+					std::vector<std::string> levelMap = loadFromFile("res/maps/map0.txt");
+				}
+				if (currentMap == 1)
+				{
+					std::vector<std::string> levelMap = loadFromFile("res/maps/map1.txt");
+				}
+				if (currentMap == 2)
+				{
+					std::vector<std::string> levelMap = loadFromFile("res/maps/map2.txt");
+				}
+
+			}
+
 
 
 
@@ -232,7 +249,7 @@ int main(int argc, char* args[])
 					{
 						SDL_RenderCopy(gRenderer, textures[4], NULL, &fillRect);
 						Wall* wall = new Wall(new VectorI2{ j * 32 - 32, i * 32 - 32 }, 32, 32, false);
-						ListWalls.push_back(wall);
+						ListPoints.push_back(wall);
 						maxPoints++;
 					}
 				}

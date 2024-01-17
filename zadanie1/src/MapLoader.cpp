@@ -33,7 +33,7 @@ void drawElement(int x, int y, char sign, std::vector< SDL_Texture*> textures, S
 	}
 	else if (sign == '=') {
 		SDL_RenderCopy(gRenderer, textures[3], NULL, &fillRect);
-		Wall wall = Wall(position, 32, 32);
+		//Wall wall = Wall(position, 32, 32);
 	}
 }
 
