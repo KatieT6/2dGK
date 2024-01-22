@@ -38,7 +38,7 @@ public:
 	int getRadius();
 
 
-	SDL_Rect* getCollider();
+	//SDL_Rect* getCollider();
 	void setPosition(VectorI2& pos);
 	void setVelocity(VectorF2& vel);
 	void setTargetVelocity(VectorF2 &vel);
@@ -54,5 +54,7 @@ public:
 	void separate(Player otherPlayer);
 	void separate(Player* player, float tileX, float tileY, VectorF2 closestPoint);
 	void separate(Player* player, Wall* otherWall, VectorF2 closestPoint);
+	bool checkCollisions();
+
 };
 

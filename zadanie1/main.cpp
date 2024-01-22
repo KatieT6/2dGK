@@ -22,7 +22,7 @@ const int MAP_WIDTH = 60 * 32;
 const int MAP_HEIGHT = 40 * 32;
 int currentMap = 0;
 
-int maxPoints = 0;
+int maxPoints = 3;
 int actualPoints = 0;
 
 int mouseX, mouseY;
@@ -148,7 +148,7 @@ int main(int argc, char* args[])
 		//Teksture for player
 		playerTexture = loadTextureFromTheSurface("res/textures/player.png", gRenderer);
 		playerAmongusTexture = loadTextureFromTheSurface("res/textures/player-amongus.png", gRenderer);
-		checkPointTexture = loadTextureFromTheSurface("res/textures/point.png", gRenderer);
+		checkPointTexture = loadTextureFromTheSurface("res/textures/Background/point.png", gRenderer);
 
 
 		//Tekstures from map loadres
@@ -207,7 +207,7 @@ int main(int argc, char* args[])
 
 
 			//elementsOfMap = loadElementInfoFromFile("res/maps/legend.txt");
-			std::vector<std::string> levelMap = loadFromFile("res/maps/map1.txt");
+			std::vector<std::string> levelMap = loadFromFile("res/maps/map0.txt");
 
 
 			//Clear screen
@@ -250,9 +250,12 @@ int main(int argc, char* args[])
 					}
 					else if (sign == 'P')
 					{
+						SDL_RenderCopy(gRenderer, textures[0], NULL, &fillRect);
+						fillRect = { x, y,  32,  32 };
 						SDL_RenderCopy(gRenderer, textures[4], NULL, &fillRect);
 						Wall* wall = new Wall(new VectorI2{ j * 32 - 32, i * 32 - 32 }, 32, 32, false);
-						ListPoints.push_back(wall);
+						wall->isPoint = true;
+						ListWalls.push_back(wall);
 						maxPoints++;
 					}
 				}
@@ -387,6 +390,25 @@ void checkScore(Player* p1, Player* p2) {
 }
 		
 
+void displayNavigationArrow(VectorI2 playerPosition, VectorI2 targetPosition) {
+	// Calculate the angle between playerPosition and targetPosition
+	float angle = atan2(targetPosition.y - playerPosition.y, targetPosition.x - playerPosition.x);
+
+	// Convert angle to degrees
+	angle = angle * (180.0 / M_PI);
+
+	// Load arrow texture (replace this with your own arrow image)
+	SDL_Texture* arrowTexture = loadTextureFromTheSurface("res/textures/arrow.png", gRenderer);
+
+	// Calculate position for arrow (adjust these values based on your arrow image size)
+	int arrowWidth = 32;
+	int arrowHeight = 32;
+	int arrowX = SCREEN_WIDTH - arrowWidth;  // Adjust this to position the arrow on the screen
+	int arrowY = SCREEN_HEIGHT - arrowHeight;  // Adjust this to position the arrow on the screen
+
+	// Set the rotation angle for rendering the arrow
+	SDL_RenderCopyEx(gRenderer, arrowTexture, NULL, (SDL_Rect{ arrowX, arrowY, arrowWidth, arrowHeight }), angle, NULL, SDL_FLIP_NONE);
+}
 
 
 std::vector<Player> createPlayers(int quantity, int r, bool isCircle) {

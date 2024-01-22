@@ -91,7 +91,9 @@ void Player::updatePlayerPosition()
 	position.y += velocity.y;
 }
 
-bool Player::checkCollisions()
+bool Player::checkCollisions() {
+	return true;
+}
 
 void Player::CircleCircleCollision(Player otherPlayer)
 {
@@ -128,6 +130,10 @@ void Player::RectRectCollision(Wall* otherPlayer) {
 		
 		if (left > 0 && right > 0 && top > 0 && bottom > 0) {
 			printf(" Rect Rect Collision -- player 2 \n");
+			if (otherPlayer->isPoint)
+			{
+				printf("!!	   got point      !!\n");
+			}
 			//printf("x, y: (%d, %d)f\n\n", this->position.x, this->position.y);
 			//printf("wall (%d, %d)\n\n", otherPlayer->getPosition().x, otherPlayer->getPosition().y);
 			// Znajdü wektor separacji
