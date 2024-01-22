@@ -29,10 +29,10 @@
     <ClInclude Include="lib\Collider.h" />
     <ClInclude Include="lib\MapLoader.h" />
     <ClInclude Include="lib\Point.h" />
+    <ClInclude Include="lib\Score.h" />
     <ClInclude Include="lib\Vector.h" />
     <ClInclude Include="lib\Player.h" />
     <ClInclude Include="lib\Wall.h" />
-    <ClInclude Include="Score.h" />
     <ClInclude Include="Values.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

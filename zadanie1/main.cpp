@@ -9,6 +9,7 @@
 #include "lib/MapLoader.h"
 #include "lib/Player.h"
 #include "lib/Point.h"
+#include "lib/Score.h"
 
 /// <summary>
 /// trzeba naprawiæ kamere tak ¿eby relatywna pozycja by³a git
@@ -64,6 +65,8 @@ std::vector<Circle> circles;
 std::vector<Wall*> ListWalls;
 std::vector<Wall*> ListPoints;
 std::vector<VectorI2> Positions;
+Score score = Score();
+
 
 bool firstTime = true;
 
@@ -377,6 +380,10 @@ void updatePlayersCollision(Player* player1, Player* player2, std::vector<Wall*>
 	}
 
 		//players->at(i).handleWallCollision();
+}
+
+void checkScore(Player* p1, Player* p2) {
+
 }
 		
 

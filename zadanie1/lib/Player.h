@@ -47,7 +47,8 @@ public:
 	void updatePlayerPosition();  
 	void CircleCircleCollision(Player otherPlayer);
 	void RectRectCollision(Wall* otherPlayer);
-	void CircleRectCollision(Wall* otherPlayer);
+	bool checkCircleRectCollision(Player* circle, Wall* rect, bool collide);
+	//void CircleRectCollision(Wall* otherPlayer);
 	void handleWallCollision();
 	float clamp(float value, float min, float max);
 	void separate(Player otherPlayer);

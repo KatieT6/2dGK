@@ -91,6 +91,8 @@ void Player::updatePlayerPosition()
 	position.y += velocity.y;
 }
 
+bool Player::checkCollisions()
+
 void Player::CircleCircleCollision(Player otherPlayer)
 {
 	VectorF2 distance = {
@@ -160,23 +162,22 @@ void Player::RectRectCollision(Wall* otherPlayer) {
 }
 
 
-bool checkCircleRectCollision(Player* circle, Wall* rect, bool collide)
+bool Player::checkCircleRectCollision(Player* circle, Wall* rect, bool collide)
 {
-	VectorF2 closestPoint;
-	closestPoint.x = clamp(player->position.x, tileXIndex * TILE_SIZE, tileXIndex * TILE_SIZE + TILE_SIZE);
-	closestPoint.y = clamp(player->position.y, tileYIndex * TILE_SIZE, tileYIndex * TILE_SIZE + TILE_SIZE);
+	VectorF2 closestPoint{};
+	closestPoint.x = clamp(circle->getPosition().x, rect->position.x * 32, rect->position.x * 32 + 32);
+	closestPoint.y = clamp(circle->getPosition().y, rect->position.y * 32, rect->position.y * 32 + 32);
 
 	float distance;
-	distance = sqrt(pow(player->position.x - closestPoint.x, 2) + pow(player->position.y - closestPoint.y, 2));
+	distance = sqrt(pow(circle->getPosition().x - closestPoint.x, 2) + pow(circle->getPosition().y - closestPoint.y, 2));
 
-	if (distance < player->radius) {
-		if (collide) separate(player, tileXIndex = rect->position.x, tileYIndex = rect->position.y, closestPoint);
+	if (distance < circle->getRadius()) {
+		if (collide) separate(circle, rect->position.x, rect->position.y, closestPoint);
 		return true;
 	}
 	else {
 		return false;
 	}
-}
 }
 
 //void Player::CircleRectCollision(Wall* otherPlayer)
