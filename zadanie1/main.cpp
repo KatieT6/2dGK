@@ -64,10 +64,14 @@ SDL_Texture* checkPointTexture = NULL;
 std::vector<Circle> circles;
 std::vector<Wall*> ListWalls;
 std::vector<Wall*> ListPoints;
+
+VectorI2 treasurePoints;
+
 std::vector<VectorI2> Positions;
 Score score = Score();
+VectorI2 normalize(VectorI2 v);
 
-
+bool first = true;
 bool firstTime = true;
 
 bool init();
@@ -91,6 +95,9 @@ void playerInBounds(Player* player);
 void playerInCameraWidth(SDL_Rect* camera, Player* player1, Player* player2);
 bool checkCollision(SDL_Rect* a, SDL_Rect* b);
 
+void DrawDottedLine(SDL_Renderer* renderer, int x0, int y0, int x1, int y1);
+bool checkIfTreasureIsInCamera(SDL_Rect* camera, VectorI2* treasure);
+VectorI2 calculateMidPoint(Player* p1, Player* p2);
 
 void close();
 
@@ -256,11 +263,17 @@ int main(int argc, char* args[])
 						Wall* wall = new Wall(new VectorI2{ j * 32 - 32, i * 32 - 32 }, 32, 32, false);
 						wall->isPoint = true;
 						ListWalls.push_back(wall);
+						if (first)
+						{
+							treasurePoints = { j, i };
+						printf("Positions of points: %d, %d \n",  position.x, position.y);
+						}
 						maxPoints++;
 					}
 				}
 			}
 
+			first = false;
 			//VectorI2 rand = randPlayerPosition(Positions);
 			VectorI2 rand = { 32, 64 };
 
@@ -269,6 +282,7 @@ int main(int argc, char* args[])
 				player1.setPosition(rand);
 				player2.setPosition(rand);
 				firstTime = false;
+
 			}
 
 
@@ -279,11 +293,21 @@ int main(int argc, char* args[])
 			updatePlayersCollision(&player1, &player2, ListWalls);
 			drawPlayerWithTextures(camera, playerTexture, &player1);
 			drawPlayerWithTextures(camera, playerAmongusTexture, &player2);
-
 			updateCamera(camera, &player1, &player2, &targetX, &targetY);
+			
+			if (!checkIfTreasureIsInCamera(camera, &treasurePoints ))
+			{
+				VectorI2 midPoint = calculateMidPoint(&player1, &player2);
+				VectorI2 normalized = normalize(VectorI2{ treasurePoints.x * 32 + 16 - midPoint.x, treasurePoints.y * 32 + 16 - midPoint.y });
+
+				DrawDottedLine(gRenderer, normalized.x + ( midPoint.x + 16 - camera->x), normalized.y + (midPoint.y + 16 - camera->y),
+				treasurePoints.x * 32 + 16 - camera->x, treasurePoints.y * 32 + 16 - camera->y);
+			}
+
 			playerInCameraWidth(camera, &player1, &player2);
 			playerInBounds(&player1);
 			playerInBounds(&player2);
+			
 			cameraInBounds(camera);
 
 			
@@ -388,27 +412,35 @@ void updatePlayersCollision(Player* player1, Player* player2, std::vector<Wall*>
 void checkScore(Player* p1, Player* p2) {
 
 }
-		
-
-void displayNavigationArrow(VectorI2 playerPosition, VectorI2 targetPosition) {
-	// Calculate the angle between playerPosition and targetPosition
-	float angle = atan2(targetPosition.y - playerPosition.y, targetPosition.x - playerPosition.x);
-
-	// Convert angle to degrees
-	angle = angle * (180.0 / M_PI);
-
-	// Load arrow texture (replace this with your own arrow image)
-	SDL_Texture* arrowTexture = loadTextureFromTheSurface("res/textures/arrow.png", gRenderer);
-
-	// Calculate position for arrow (adjust these values based on your arrow image size)
-	int arrowWidth = 32;
-	int arrowHeight = 32;
-	int arrowX = SCREEN_WIDTH - arrowWidth;  // Adjust this to position the arrow on the screen
-	int arrowY = SCREEN_HEIGHT - arrowHeight;  // Adjust this to position the arrow on the screen
-
-	// Set the rotation angle for rendering the arrow
-	SDL_RenderCopyEx(gRenderer, arrowTexture, NULL, (SDL_Rect{ arrowX, arrowY, arrowWidth, arrowHeight }), angle, NULL, SDL_FLIP_NONE);
+ 
+VectorI2 calculateMidPoint(Player* p1, Player* p2) {
+	VectorI2 midPoint = { (p1->getPosition().x + p2->getPosition().x) / 2, (p1->getPosition().y + p2->getPosition().y) / 2 };
+	return midPoint;
 }
+
+VectorI2 normalize(VectorI2 v) {
+	float length = sqrt(v.x * v.x + v.y * v.y);
+	VectorI2 normalized = { v.x / length, v.y / length };
+	return normalized;
+}
+
+void DrawDottedLine(SDL_Renderer* renderer, int x0, int y0, int x1, int y1) {
+	int dx = abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+	int dy = -abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+	int err = dx + dy, e2;
+	int count = 0;
+	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+	while (1) {
+		if (count < 10) { SDL_RenderDrawPoint(renderer, x0, y0); }
+		if (x0 == x1 && y0 == y1) break;
+		e2 = 2 * err;
+		if (e2 > dy) { err += dy; x0 += sx; }
+		if (e2 < dx) { err += dx; y0 += sy; }
+		count = (count + 1) % 20;
+	}
+}
+
+
 
 
 std::vector<Player> createPlayers(int quantity, int r, bool isCircle) {
@@ -607,6 +639,18 @@ void updateCamera(SDL_Rect* camera, Player* p1, Player* p2, int* targetX,int *ta
 	camera->x = *targetX * (1.0f - smooth) + camera->x * smooth;
 	camera->y = *targetY * (1.0f - smooth) + camera->y * smooth;
 	
+}
+
+bool checkIfTreasureIsInCamera(SDL_Rect* camera, VectorI2* treasure) {
+	if (treasure->x * 32 - camera->x >= camera->x + SCREEN_WIDTH - 32 || treasure->x * 32 - camera->x <= camera->x ||
+		treasure->y * 32 - camera->y >= camera->y + SCREEN_HEIGHT - 32 || treasure->y * 32 - camera->y <= camera->y)
+	{
+			return false;
+	}
+	else
+	{
+		return true;
+	}
 
 }
 
