@@ -18,22 +18,58 @@ std::vector<std::string> loadFromFile(const std::string& fileName) {
 }
 
 
-void drawElement(int x, int y, char sign, std::vector< SDL_Texture*> textures, SDL_Renderer* gRenderer, int x_m, int y_m) {
+void drawElement(int x, int y, char sign, std::vector< SDL_Texture*> textures, SDL_Renderer* gRenderer, int x_m, int y_m, bool is3Layer) {
 	SDL_Rect fillRect = { x, y,  32,  32 };
 	VectorI2* position = new VectorI2{ x_m, y_m };
 	
-	if (sign == ';') {
+	if (sign == 'L') {
 		SDL_RenderCopy(gRenderer, textures[0], NULL, &fillRect);
 	}
-	else if (sign == '#') {
+	else if (sign == 'G') {
 		SDL_RenderCopy(gRenderer, textures[1], NULL, &fillRect);
 	}
-	else if (sign == '-') {
+	else if (sign == 'g') {
 		SDL_RenderCopy(gRenderer, textures[2], NULL, &fillRect);
 	}
-	else if (sign == '=') {
+	else if (sign == 'k') {
+		if (is3Layer)
+		{
+			SDL_RenderCopy(gRenderer, textures[2], NULL, &fillRect);
+		}
 		SDL_RenderCopy(gRenderer, textures[3], NULL, &fillRect);
 		//Wall wall = Wall(position, 32, 32);
+	}
+	else if(sign == 'K')
+	{
+		if (is3Layer)
+		{
+			SDL_RenderCopy(gRenderer, textures[2], NULL, &fillRect);
+		}
+		SDL_RenderCopy(gRenderer, textures[4], NULL, &fillRect);
+	}
+	else if (sign == 'm')
+	{
+		SDL_RenderCopy(gRenderer, textures[5], NULL, &fillRect);
+	}
+	else if (sign == 'M')
+	{
+		SDL_RenderCopy(gRenderer, textures[6], NULL, &fillRect);
+	}
+	else if (sign == 'w')
+	{
+		SDL_RenderCopy(gRenderer, textures[7], NULL, &fillRect);
+	}
+	else if (sign == 'D')
+	{
+		SDL_RenderCopy(gRenderer, textures[8], NULL, &fillRect);
+	}
+	else if (sign == 'd')
+	{
+		SDL_RenderCopy(gRenderer, textures[9], NULL, &fillRect);
+	}
+	else if (sign == 'h')
+	{
+		SDL_RenderCopy(gRenderer, textures[10], NULL, &fillRect);
 	}
 }
 

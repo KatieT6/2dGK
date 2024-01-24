@@ -11,15 +11,12 @@
 #include "lib/Point.h"
 #include "lib/Score.h"
 
-/// <summary>
-/// trzeba naprawiæ kamere tak ¿eby relatywna pozycja by³a git
-/// </summary>
 
-const int SCREEN_WIDTH = 800;
+const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 640;
 
-const int MAP_WIDTH = 60 * 32;
-const int MAP_HEIGHT = 40 * 32;
+const int MAP_WIDTH = 3200;
+const int MAP_HEIGHT = 640;
 int currentMap = 0;
 
 int maxPoints = 3;
@@ -49,15 +46,23 @@ SDL_Texture* playerTexture = NULL;
 
 SDL_Texture* playerAmongusTexture = NULL;
 
-SDL_Texture* grassTexture = NULL;
+SDL_Texture* topLgora = NULL;
 
-SDL_Texture* skyTexture = NULL;
+SDL_Texture* topRgora = NULL;
 
-SDL_Texture* wallTexture = NULL;
+SDL_Texture* gora = NULL;
 
-SDL_Texture* brickTexture = NULL;
+SDL_Texture* woda = NULL;
 
-SDL_Texture* checkPointTexture = NULL;
+SDL_Texture* LTkrzak = NULL;
+SDL_Texture* LDkrzak = NULL;
+SDL_Texture* RTkrzak = NULL;
+SDL_Texture* RDkrzak = NULL;
+
+SDL_Texture* drewno = NULL;
+SDL_Texture* drewnoPol = NULL;
+
+SDL_Texture* hydrant = NULL;
 
 #pragma endregion
 
@@ -105,7 +110,11 @@ void update(int player1Velocity, int player2Velocity, Player* p1, Player* p2);
 void updatePlayersCollision(Player* player1, Player* player2, std::vector<Wall*> walls);
 float smoothingMotion(float targetSpeed, float smooth, float velocity);
 
+float layer1Speed = 1.0f;
+float layer2Speed = 0.7f;
+float layer3Speed = 0.25f;
 
+void changeLayersSpeed();
 
 
 int main(int argc, char* args[])
@@ -153,22 +162,34 @@ int main(int argc, char* args[])
 		int targetX = 0;
 		int targetY = 0;
 		//Teksture for player
-		playerTexture = loadTextureFromTheSurface("res/textures/player.png", gRenderer);
-		playerAmongusTexture = loadTextureFromTheSurface("res/textures/player-amongus.png", gRenderer);
-		checkPointTexture = loadTextureFromTheSurface("res/textures/Background/point.png", gRenderer);
+		playerTexture = loadTextureFromTheSurface("res/textures/zaba1.png", gRenderer);
+		playerAmongusTexture = loadTextureFromTheSurface("res/textures/zaba2.png", gRenderer);
+		drewno = loadTextureFromTheSurface("res/textures/Background/drewno.png", gRenderer);
+		drewnoPol = loadTextureFromTheSurface("res/textures/Background/drewno-pol.png", gRenderer);
+		hydrant = loadTextureFromTheSurface("res/textures/Background/hydrant.png", gRenderer);
 
 
 		//Tekstures from map loadres
 		std::vector<SDL_Texture*> textures;
-		grassTexture = loadTextureFromTheSurface("res/textures/Background/Green.png", gRenderer);
-		skyTexture = loadTextureFromTheSurface("res/textures/Background/Blue.png", gRenderer);
-		wallTexture = loadTextureFromTheSurface("res/textures/Background/Yellow.png", gRenderer);
-		brickTexture = loadTextureFromTheSurface("res/textures/Background/Brown.png", gRenderer);
-		textures.push_back(grassTexture);
-		textures.push_back(skyTexture);
-		textures.push_back(wallTexture);
-		textures.push_back(brickTexture);
-		textures.push_back(checkPointTexture);
+		topLgora = loadTextureFromTheSurface("res/textures/Background/L-goratop.png", gRenderer);
+		topRgora = loadTextureFromTheSurface("res/textures/Background/R-goratop.png", gRenderer);
+		gora = loadTextureFromTheSurface("res/textures/Background/gora.png", gRenderer);
+		LTkrzak = loadTextureFromTheSurface("res/textures/Background/L-korona.png", gRenderer);
+		LDkrzak = loadTextureFromTheSurface("res/textures/Background/Ld-korona.png", gRenderer);
+		RTkrzak = loadTextureFromTheSurface("res/textures/Background/R-korona.png", gRenderer);
+		RDkrzak = loadTextureFromTheSurface("res/textures/Background/Rd-korona.png", gRenderer);
+		woda = loadTextureFromTheSurface("res/textures/Background/woda.png", gRenderer);
+		textures.push_back(topLgora);
+		textures.push_back(topRgora);
+		textures.push_back(gora);
+		textures.push_back(LTkrzak);
+		textures.push_back(RTkrzak);
+		textures.push_back(LDkrzak);
+		textures.push_back(RDkrzak);
+		textures.push_back(woda);
+		textures.push_back(drewno);
+		textures.push_back(drewnoPol);
+		textures.push_back(hydrant);
 
 		//While application is running
 		while (!quit)
@@ -194,27 +215,11 @@ int main(int argc, char* args[])
 				}
 			}
 
-			if (actualPoints != maxPoints)
-			{ 
-				if (currentMap == 0) {
-					std::vector<std::string> levelMap = loadFromFile("res/maps/map0.txt");
-				}
-				if (currentMap == 1)
-				{
-					std::vector<std::string> levelMap = loadFromFile("res/maps/map1.txt");
-				}
-				if (currentMap == 2)
-				{
-					std::vector<std::string> levelMap = loadFromFile("res/maps/map2.txt");
-				}
-
-			}
-
-
-
 
 			//elementsOfMap = loadElementInfoFromFile("res/maps/legend.txt");
-			std::vector<std::string> levelMap = loadFromFile("res/maps/map0.txt");
+			std::vector<std::string>layer3 = loadFromFile("res/maps/layer1.txt");
+			std::vector<std::string>layer2 = loadFromFile("res/maps/layer2.txt");
+			std::vector<std::string>layer1 = loadFromFile("res/maps/layer3.txt");
 
 
 			//Clear screen
@@ -227,64 +232,34 @@ int main(int argc, char* args[])
 			int x, y;
 			int x_m;
 			int y_m;
+
+
+			changeLayersSpeed();
+
+			printf("Speed layer 3: %f \n", layer3Speed);
+			printf("Speed layer 2: %f \n", layer2Speed);
+			printf("Speed layer 1: %f \n", layer1Speed);
+
 			for (int i = 0; i < MAP_HEIGHT / 32; i++) {
-				std::string line = levelMap.at(i);
+				std::string line = layer3.at(i);
 				for (int j = 0; j < MAP_WIDTH / 32; j++) {
-					
-					//drawElement((j * 32 - camera->x), (i * 32 - camera->y), line.at(j), textures, gRenderer, j * 32, i * 32);
-					sign = line.at(j);
-					x = j * 32 - camera->x;
-					y = i * 32 - camera->y;
-					
-					SDL_Rect fillRect = { x, y,  32,  32 };
-					VectorI2 position = {j * 32 - 32, i * 32 - 32 };
-					//VectorI2* possiblePositions;
-					if (sign == ';') {
-						//possiblePositions = { x_m, y_m };
-						Positions.push_back(position);
-						SDL_RenderCopy(gRenderer, textures[0], NULL, &fillRect);
-					}
-					else if (sign == '#') {
-						SDL_RenderCopy(gRenderer, textures[1], NULL, &fillRect);
-					}
-					else if (sign == '-') {
-						SDL_RenderCopy(gRenderer, textures[2], NULL, &fillRect);
-					}
-					else if (sign == '=') {
-						SDL_RenderCopy(gRenderer, textures[3], NULL, &fillRect);
-						Wall* wall = new Wall(new VectorI2{ j * 32 - 32, i * 32 - 32}, 32, 32, false);
-						ListWalls.push_back(wall);
-					}
-					else if (sign == 'P')
-					{
-						SDL_RenderCopy(gRenderer, textures[0], NULL, &fillRect);
-						fillRect = { x, y,  32,  32 };
-						SDL_RenderCopy(gRenderer, textures[4], NULL, &fillRect);
-						Wall* wall = new Wall(new VectorI2{ j * 32 - 32, i * 32 - 32 }, 32, 32, false);
-						wall->isPoint = true;
-						ListWalls.push_back(wall);
-						if (first)
-						{
-							treasurePoints = { j, i };
-						printf("Positions of points: %d, %d \n",  position.x, position.y);
-						}
-						maxPoints++;
-					}
+					drawElement((j * 32 - camera->x * layer3Speed), (i * 32 - camera->y) , line.at(j), textures, gRenderer, j * 32, i * 32, true);
 				}
 			}
 
-			first = false;
-			//VectorI2 rand = randPlayerPosition(Positions);
-			VectorI2 rand = { 32, 64 };
-
-			if (firstTime)
-			{
-				player1.setPosition(rand);
-				player2.setPosition(rand);
-				firstTime = false;
-
+			for (int i = 0; i < MAP_HEIGHT / 32; i++) {
+				std::string line = layer2.at(i);
+				for (int j = 0; j < MAP_WIDTH / 32; j++) {
+					drawElement((j * 32 - camera->x * layer2Speed), (i * 32 - camera->y), line.at(j), textures, gRenderer, j * 32, i * 32, false);
+				}
 			}
 
+			for (int i = 0; i < MAP_HEIGHT / 32; i++) {
+				std::string line = layer1.at(i);
+				for (int j = 0; j < MAP_WIDTH / 32; j++) {
+					drawElement((j * 32 - camera->x * layer1Speed), (i * 32 - camera->y), line.at(j), textures, gRenderer, j * 32, i * 32, false);
+				}
+			}
 
 			/*player1.setPosition(possiblePositions);
 			player2.setPosition(possiblePositions);*/
@@ -413,6 +388,34 @@ void checkScore(Player* p1, Player* p2) {
 
 }
  
+void changeLayersSpeed() {
+	const Uint8* currentKeyStates = SDL_GetKeyboardState(NULL);
+	if (currentKeyStates[SDL_SCANCODE_R])
+	{
+		layer3Speed += 0.01f;
+	}
+	if (currentKeyStates[SDL_SCANCODE_F])
+	{
+		layer3Speed -= 0.01f;
+	}
+	if (currentKeyStates[SDL_SCANCODE_T])
+	{
+		layer2Speed += 0.01f;
+	}
+	if (currentKeyStates[SDL_SCANCODE_G])
+	{
+		layer2Speed -= 0.01f;
+	}
+	if (currentKeyStates[SDL_SCANCODE_Y])
+	{
+		layer1Speed += 0.01f;
+	}
+	if (currentKeyStates[SDL_SCANCODE_H])
+	{
+		layer1Speed -= 0.01f;
+	}
+}
+
 VectorI2 calculateMidPoint(Player* p1, Player* p2) {
 	VectorI2 midPoint = { (p1->getPosition().x + p2->getPosition().x) / 2, (p1->getPosition().y + p2->getPosition().y) / 2 };
 	return midPoint;
