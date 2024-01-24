@@ -64,6 +64,7 @@ SDL_Texture* checkPointTexture = NULL;
 std::vector<Circle> circles;
 std::vector<Wall*> ListWalls;
 std::vector<Wall*> ListPoints;
+VectorI2 possiblePositions;
 
 VectorI2 treasurePoints;
 
@@ -110,6 +111,7 @@ float smoothingMotion(float targetSpeed, float smooth, float velocity);
 
 int main(int argc, char* args[])
 {
+	std::srand(static_cast<unsigned>(std::time(nullptr)));
 	//Start up SDL and create window
 	if (!init())
 	{
@@ -132,6 +134,8 @@ int main(int argc, char* args[])
 		
 		VectorI2 v = { SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };
 		Player player1 = Player(32, 32, v);
+		player1.isCircle = true;
+		player1.setRadius(16);
 		Player player2 = Player(32, 32, v);
 		//player1.setPosition(v);
 
@@ -194,16 +198,18 @@ int main(int argc, char* args[])
 				}
 			}
 
-			if (actualPoints != maxPoints)
+			if (currentMap != score.getCurrentMap())
 			{ 
+				currentMap = score.getCurrentMap();
+
 				if (currentMap == 0) {
 					std::vector<std::string> levelMap = loadFromFile("res/maps/map0.txt");
 				}
-				if (currentMap == 1)
+				else if (currentMap == 1)
 				{
 					std::vector<std::string> levelMap = loadFromFile("res/maps/map1.txt");
 				}
-				if (currentMap == 2)
+				else if (currentMap == 2)
 				{
 					std::vector<std::string> levelMap = loadFromFile("res/maps/map2.txt");
 				}
@@ -225,8 +231,7 @@ int main(int argc, char* args[])
 			int numberOfRows = SCREEN_HEIGHT / 32;
 			char sign;
 			int x, y;
-			int x_m;
-			int y_m;
+
 			for (int i = 0; i < MAP_HEIGHT / 32; i++) {
 				std::string line = levelMap.at(i);
 				for (int j = 0; j < MAP_WIDTH / 32; j++) {
@@ -238,10 +243,13 @@ int main(int argc, char* args[])
 					
 					SDL_Rect fillRect = { x, y,  32,  32 };
 					VectorI2 position = {j * 32 - 32, i * 32 - 32 };
-					//VectorI2* possiblePositions;
+					
 					if (sign == ';') {
-						//possiblePositions = { x_m, y_m };
-						Positions.push_back(position);
+						if (first)
+						{
+						possiblePositions = { x, y};
+						Positions.push_back(possiblePositions);
+						}
 						SDL_RenderCopy(gRenderer, textures[0], NULL, &fillRect);
 					}
 					else if (sign == '#') {
@@ -274,11 +282,10 @@ int main(int argc, char* args[])
 			}
 
 			first = false;
-			//VectorI2 rand = randPlayerPosition(Positions);
-			VectorI2 rand = { 32, 64 };
-
+			VectorI2 rand = randPlayerPosition(Positions);
 			if (firstTime)
 			{
+			printf("Positions of players: %d, %d \n", rand.x, rand.y);
 				player1.setPosition(rand);
 				player2.setPosition(rand);
 				firstTime = false;
@@ -327,10 +334,8 @@ int main(int argc, char* args[])
 				SDL_Delay(desiredFrameTime - deltaTime);
 			}
 
-			if (maxPoints == actualPoints)
-			{
-				printf("YOU WON!!");
-			}
+			score.printScore();
+			score.theEnd();
 		}
 
 
@@ -402,8 +407,18 @@ void updatePlayersCollision(Player* player1, Player* player2, std::vector<Wall*>
 		//player2->separate(player); /// tu zmieniæ na walls
 
 		//player1->RectRectCollision(walls.at(j));
-		player1->RectRectCollision(walls.at(j));
-		player2->RectRectCollision(walls.at(j));
+		if (player1->CircleRectCollision(walls.at(j)))
+		{
+			score.addPointTo(1);
+			score.nextMap();
+			return;
+		}
+		if (player2->RectRectCollision(walls.at(j)))
+		{
+			score.addPointTo(2);
+			score.nextMap();
+			return;
+		}
 	}
 
 		//players->at(i).handleWallCollision();

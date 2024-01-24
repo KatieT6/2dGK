@@ -120,7 +120,7 @@ void Player::CircleCircleCollision(Player otherPlayer)
 
 
 
-void Player::RectRectCollision(Wall* otherPlayer) {
+bool Player::RectRectCollision(Wall* otherPlayer) {
 	if (!this->isCircle && !otherPlayer->isCircle) {
 		float left = position.x + 2 * width - otherPlayer->position.x;
 		float right = otherPlayer->position.x + 2 * otherPlayer->width - position.x;
@@ -132,7 +132,8 @@ void Player::RectRectCollision(Wall* otherPlayer) {
 			printf(" Rect Rect Collision -- player 2 \n");
 			if (otherPlayer->isPoint)
 			{
-				printf("!!	   got point      !!\n");
+				printf("!!	P2   got point      !!\n");
+				return true;
 			}
 			//printf("x, y: (%d, %d)f\n\n", this->position.x, this->position.y);
 			//printf("wall (%d, %d)\n\n", otherPlayer->getPosition().x, otherPlayer->getPosition().y);
@@ -165,83 +166,43 @@ void Player::RectRectCollision(Wall* otherPlayer) {
 		}
 
 	}
+	return false;
 }
 
 
-bool Player::checkCircleRectCollision(Player* circle, Wall* rect, bool collide)
+
+bool Player::CircleRectCollision(Wall* otherPlayer)
 {
-	VectorF2 closestPoint{};
-	closestPoint.x = clamp(circle->getPosition().x, rect->position.x * 32, rect->position.x * 32 + 32);
-	closestPoint.y = clamp(circle->getPosition().y, rect->position.y * 32, rect->position.y * 32 + 32);
 
-	float distance;
-	distance = sqrt(pow(circle->getPosition().x - closestPoint.x, 2) + pow(circle->getPosition().y - closestPoint.y, 2));
+	// ZnajdŸ najbli¿szy punkt na prostok¹cie do œrodka ko³a
+	float closestX = fmaxf(otherPlayer->position.x  +16, fminf(this->position.x, otherPlayer->position.x + 16 + otherPlayer->width));
+	float closestY = fmaxf(otherPlayer->position.y + 16, fminf(this->position.y, otherPlayer->position.y + 16 + otherPlayer->height));
 
-	if (distance < circle->getRadius()) {
-		if (collide) separate(circle, rect->position.x, rect->position.y, closestPoint);
-		return true;
+	// Oblicz odleg³oœæ miêdzy œrodkiem ko³a a najbli¿szym punktem na prostok¹cie
+	float distance = sqrtf(powf(this->position.x - closestX, 2) + powf(this->position.y - closestY, 2));
+
+	// SprawdŸ, czy odleg³oœæ jest mniejsza ni¿ promieñ ko³a
+	if (distance < this->r) {
+		printf("Collision detected!\n");
+		if (otherPlayer->isPoint)
+		{
+			printf("!!	P1   got point      !!\n");
+			return true;
+		}
+		// Jeœli chcesz dokonaæ separacji obiektów, odsuñ ko³o od prostok¹ta
+		if (true) {
+			float overlap = this->r - distance;
+			float directionX = (this->position.x - closestX) / distance;
+			float directionY = (this->position.y - closestY) / distance;
+
+			this->position.x += overlap * directionX;
+			this->position.y += overlap * directionY;
+		}
+
 	}
-	else {
-		return false;
-	}
+	return false;
 }
 
-//void Player::CircleRectCollision(Wall* otherPlayer)
-//{
-//	if (this->isCircle == true && otherPlayer->isCircle == false)
-//	{
-//		float left = position.x + 2 * width - otherPlayer->position.x;
-//		float right = otherPlayer->position.x + 2 * otherPlayer->width - position.x;
-//		float top = position.y + 2 * height - otherPlayer->position.y;
-//		float bottom = otherPlayer->position.y + 2 * otherPlayer->height - position.y;
-//
-//		VectorF2 f = { clamp(this->getPosition().x, left, right), clamp(this->getPosition().y, top, bottom) };
-//		float distance = sqrt((f.x - this->getPosition().x) * (f.x - this->getPosition().x)
-//			+ (f.y - this->getPosition().y) * (f.y - this->getPosition().y));
-//		if (distance < this->getRadius())
-//		{
-//		printf("Circle rect collision -- player 1");
-//			if (static_cast<float>(f.x) == this->getPosition().x && static_cast<float>(f.y) == this->getPosition().y) {
-//				// ZnajdŸ wektor separacji
-//				VectorI2 separation;
-//
-//				if (left < right) {
-//					separation.x = -left;
-//				}
-//				else {
-//					separation.x = right;
-//				}
-//
-//				if (top < bottom) {
-//					separation.y = -top;
-//				}
-//				else {
-//					separation.y = bottom;
-//				}
-//
-//				if (abs(separation.x) < abs(separation.y)) {
-//					//position.x += separation.x;
-//					velocity.x = 0;
-//				}
-//				else {
-//					//position.y += separation.y;
-//					velocity.y = 0;
-//				}
-//				printf("RECT COLLSION");
-//			}
-//			else
-//			{
-//				VectorF2 tmp = { this->getPosition().x - f.x, this->getPosition().y - f.y };
-//				VectorF2 separation = { tmp.x / distance, tmp.y / distance };
-//				float diff = this->getRadius() - distance;
-//				VectorF2 separationVector = { separation.x * diff, separation.y * diff };
-//				//this->position.x -= separationVector.x;
-//				//this->position.y -= separationVector.y;
-//				printf("CIRCLE COLLISION");
-//			}
-//		}
-//	}
-//}
 
 void Player::handleWallCollision()
 {

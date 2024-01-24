@@ -21,8 +21,27 @@ public:
 		maxMap = 2;
 	}
 
+	void theEnd() {
+		if (scoreP1 == 3) {
+			std::cout << "Player 1 won!" << std::endl;
+			printScore();
+
+			//exit(0);
+		}
+		else if (scoreP2 == 3) {
+			std::cout << "Player 2 won!" << std::endl;
+			printScore();
+			//exit(0);
+		}
+
+	}
 	
-	void addScore(int player) {
+	void printScore() {
+		std::cout << "P1 ponts:" << scoreP1 << std::endl;
+		std::cout << "P2 ponts:" << scoreP2 << std::endl;
+	}
+
+	void addPointTo(int player) {
 		if (player == 1) {
 			scoreP1++;
 		}
@@ -33,6 +52,10 @@ public:
 
 	int getCurrentMap() {
 		return currentMap;
+	}
+
+	void nextMap() {
+		currentMap++;
 	}
 };
 
