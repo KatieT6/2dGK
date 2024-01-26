@@ -91,9 +91,18 @@ void Player::updatePlayerPosition()
 	position.y += velocity.y;
 }
 
-bool Player::checkCollisions() {
-	return true;
+bool Player::checkCollisions(std::vector<Wall*> collders) {
+	for (int i = 0; i < collders.size(); i++) {
+			if (this->isCircle) {
+				 return RectRectCollision(collders.at(i));
+			}
+			else {
+				return CircleRectCollision(collders.at(i));
+			}
+	
+	}
 }
+
 
 void Player::CircleCircleCollision(Player otherPlayer)
 {
@@ -129,12 +138,12 @@ bool Player::RectRectCollision(Wall* otherPlayer) {
 
 		
 		if (left > 0 && right > 0 && top > 0 && bottom > 0) {
-			printf(" Rect Rect Collision -- player 2 \n");
-			if (otherPlayer->isPoint)
-			{
-				printf("!!	P2   got point      !!\n");
-				return true;
-			}
+			//printf(" Rect Rect Collision -- player 2 \n");
+			//if (otherPlayer->isPoint)
+			//{
+			//	printf("!!	P2   got point      !!\n");
+			//	return true;
+			//}
 			//printf("x, y: (%d, %d)f\n\n", this->position.x, this->position.y);
 			//printf("wall (%d, %d)\n\n", otherPlayer->getPosition().x, otherPlayer->getPosition().y);
 			// ZnajdŸ wektor separacji
@@ -162,6 +171,8 @@ bool Player::RectRectCollision(Wall* otherPlayer) {
 				position.y += separation.y;
 				velocity.y = 0; 
 			}
+			this->isOnGround = true;
+			return true;
 
 		}
 
@@ -183,12 +194,12 @@ bool Player::CircleRectCollision(Wall* otherPlayer)
 
 	// SprawdŸ, czy odleg³oœæ jest mniejsza ni¿ promieñ ko³a
 	if (distance < this->r) {
-		printf("Collision detected!\n");
-		if (otherPlayer->isPoint)
-		{
-			printf("!!	P1   got point      !!\n");
-			return true;
-		}
+		//printf("Collision detected!\n");
+		//if (otherPlayer->isPoint)
+		//{
+		//	printf("!!	P1   got point      !!\n");
+		//	return true;
+		//}
 		// Jeœli chcesz dokonaæ separacji obiektów, odsuñ ko³o od prostok¹ta
 		if (true) {
 			float overlap = this->r - distance;
@@ -198,7 +209,10 @@ bool Player::CircleRectCollision(Wall* otherPlayer)
 			this->position.x += overlap * directionX;
 			this->position.y += overlap * directionY;
 		}
-
+		this->isOnGround = true;
+		this->velocity.y = 0;
+		this->isJumping = false;
+		return true;
 	}
 	return false;
 }
@@ -293,6 +307,38 @@ void Player:: separate(Player* player, float tileX, float tileY, VectorF2 closes
 	}
 	player->position.x += separation.x;
 	player->setPosition(player->position);
+}
+
+void Player::handleJumping()
+{
+	if (jumpcounter < 2)
+	{
+		isJumping = true;
+		isOnGround = false;
+		jumpcounter++;
+		jumpTime = 0;
+		velocity.y = jumpVelocity0;
+	}
+}
+
+void Player::jump(Uint64 deltatime, Uint64 currenttime, Uint64 prevtime)
+{
+	float velPart = this->velocity.y * deltatime;
+	float accPart = gravity * deltatime * deltatime * 0.5;
+
+	this->position.y += velPart + accPart;
+
+	if ((!isJumping || jumpTimeMax > jumpTime) || isOnGround)
+	{
+		this->velocity.y += gravity * deltatime;
+		printf("vel: %f\n", this->velocity.y);
+		printf("pos: %d\n", this->position.y);
+		printf("grav: %f\n", this->gravity);
+	}
+	else
+	{
+		jumpTime += deltatime;
+	}
 }
 
 

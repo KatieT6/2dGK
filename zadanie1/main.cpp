@@ -19,7 +19,7 @@ const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 640;
 
 const int MAP_WIDTH = 60 * 32;
-const int MAP_HEIGHT = 40 * 32;
+const int MAP_HEIGHT = 20 * 32;
 int currentMap = 0;
 
 int maxPoints = 3;
@@ -94,7 +94,6 @@ void updateCamera(SDL_Rect* camera, Player* p1, Player* p2, int* targetX, int *t
 void cameraInBounds(SDL_Rect* camera);
 void playerInBounds(Player* player);
 void playerInCameraWidth(SDL_Rect* camera, Player* player1, Player* player2);
-bool checkCollision(SDL_Rect* a, SDL_Rect* b);
 
 void DrawDottedLine(SDL_Renderer* renderer, int x0, int y0, int x1, int y1);
 bool checkIfTreasureIsInCamera(SDL_Rect* camera, VectorI2* treasure);
@@ -108,6 +107,10 @@ float smoothingMotion(float targetSpeed, float smooth, float velocity);
 
 
 
+
+Uint64 currentTime = 0;
+Uint64 lastTime = 0;
+Uint64 deltaTime = 0;
 
 int main(int argc, char* args[])
 {
@@ -126,10 +129,8 @@ int main(int argc, char* args[])
 		//Event handler
 		SDL_Event e;
 		Uint8 alpha = 128;
-		Uint64 currentTime = 0;
-		Uint64 lastTime = 0;
-		Uint64 deltaTime = 0;
-		Uint64 desiredFrameTime = 17;
+		
+		Uint64 desiredFrameTime = 3;
 
 		
 		VectorI2 v = { SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };
@@ -244,15 +245,10 @@ int main(int argc, char* args[])
 					SDL_Rect fillRect = { x, y,  32,  32 };
 					VectorI2 position = {j * 32 - 32, i * 32 - 32 };
 					
-					if (sign == ';') {
-						if (first)
-						{
-						possiblePositions = { x, y};
-						Positions.push_back(possiblePositions);
-						}
+					if (sign == '#') {
 						SDL_RenderCopy(gRenderer, textures[0], NULL, &fillRect);
 					}
-					else if (sign == '#') {
+					else if (sign == ';') {
 						SDL_RenderCopy(gRenderer, textures[1], NULL, &fillRect);
 					}
 					else if (sign == '-') {
@@ -282,34 +278,16 @@ int main(int argc, char* args[])
 			}
 
 			first = false;
-			VectorI2 rand = randPlayerPosition(Positions);
-			if (firstTime)
-			{
-			printf("Positions of players: %d, %d \n", rand.x, rand.y);
-				player1.setPosition(rand);
-				player2.setPosition(rand);
-				firstTime = false;
-
-			}
 
 
-			/*player1.setPosition(possiblePositions);
-			player2.setPosition(possiblePositions);*/
-			//updatePlayerPosition(fillRect1, camera, velocityOfRect);
-			//update(velocityOfPlayer, velocityOfPlayer, &player1, &player2);
 			updatePlayersCollision(&player1, &player2, ListWalls);
+			player1.jump(deltaTime, currentTime, lastTime);
+			player2.jump(deltaTime, currentTime, lastTime);
+			//update(velocityOfPlayer, velocityOfPlayer, &player1, &player2);
 			drawPlayerWithTextures(camera, playerTexture, &player1);
 			drawPlayerWithTextures(camera, playerAmongusTexture, &player2);
 			updateCamera(camera, &player1, &player2, &targetX, &targetY);
 			
-			if (!checkIfTreasureIsInCamera(camera, &treasurePoints ))
-			{
-				VectorI2 midPoint = calculateMidPoint(&player1, &player2);
-				VectorI2 normalized = normalize(VectorI2{ treasurePoints.x * 32 + 16 - midPoint.x, treasurePoints.y * 32 + 16 - midPoint.y });
-
-				DrawDottedLine(gRenderer, normalized.x + ( midPoint.x + 16 - camera->x), normalized.y + (midPoint.y + 16 - camera->y),
-				treasurePoints.x * 32 + 16 - camera->x, treasurePoints.y * 32 + 16 - camera->y);
-			}
 
 			playerInCameraWidth(camera, &player1, &player2);
 			playerInBounds(&player1);
@@ -334,8 +312,6 @@ int main(int argc, char* args[])
 				SDL_Delay(desiredFrameTime - deltaTime);
 			}
 
-			score.printScore();
-			score.theEnd();
 		}
 
 
@@ -411,12 +387,16 @@ void updatePlayersCollision(Player* player1, Player* player2, std::vector<Wall*>
 		{
 			score.addPointTo(1);
 			score.nextMap();
+			player1->isOnGround = true;
+			player1->isJumping = false;
 			return;
 		}
 		if (player2->RectRectCollision(walls.at(j)))
 		{
 			score.addPointTo(2);
 			score.nextMap();
+			player2->isOnGround = true;
+			player2->isJumping = false;
 			return;
 		}
 	}
@@ -424,9 +404,6 @@ void updatePlayersCollision(Player* player1, Player* player2, std::vector<Wall*>
 		//players->at(i).handleWallCollision();
 }
 
-void checkScore(Player* p1, Player* p2) {
-
-}
  
 VectorI2 calculateMidPoint(Player* p1, Player* p2) {
 	VectorI2 midPoint = { (p1->getPosition().x + p2->getPosition().x) / 2, (p1->getPosition().y + p2->getPosition().y) / 2 };
@@ -479,51 +456,6 @@ std::vector<Player> createPlayers(int quantity, int r, bool isCircle) {
 		players.push_back(player);
 	}
 	return players;
-}
-
-bool checkCollision(SDL_Rect* a, SDL_Rect* b)
-{
-	//The sides of the rectangles
-	int leftA, leftB;
-	int rightA, rightB;
-	int topA, topB;
-	int bottomA, bottomB;
-
-	//Calculate the sides of rect A
-	leftA = a->x;
-	rightA = a->x + a->w;
-	topA = a->y;
-	bottomA = a->y + a->h;
-
-	//Calculate the sides of rect B
-	leftB = b->x;
-	rightB = b->x + b->w;
-	topB = b->y;
-	bottomB = b->y + b->h;
-
-	//If any of the sides from A are outside of B
-	if (bottomA <= topB)
-	{
-		return false;
-	}
-
-	if (topA >= bottomB)
-	{
-		return false;
-	}
-
-	if (rightA <= leftB)
-	{
-		return false;
-	}
-
-	if (leftA >= rightB)
-	{
-		return false;
-	}
-
-	//If none of the sides from A are outside B
-	return true;
 }
 
 void updateCirclesPlayers(std::vector<Player>* player) {
@@ -712,10 +644,8 @@ void update(int player1Velocity, int player2Velocity, Player* p1, Player* p2)
 
 	if (currentKeyStates[SDL_SCANCODE_UP])
 	{
-		position = { p1->getPosition().x, p1->getPosition().y - player1Velocity };
-		p1->setPosition(position);
-
-		//printf("We got a motion event.\n UP buton pressed");
+		p1->handleJumping();
+		printf("We got a motion event.\n UP buton pressed");
 	}
 
 	if (currentKeyStates[SDL_SCANCODE_DOWN])
@@ -744,9 +674,8 @@ void update(int player1Velocity, int player2Velocity, Player* p1, Player* p2)
 
 	if (currentKeyStates[SDL_SCANCODE_W])
 	{
-		position = { p2->getPosition().x , p2->getPosition().y - player2Velocity };
-		p2->setPosition(position);
-		//printf("We got a motion event.\n UP buton pressed");
+		p2->handleJumping();
+		printf("We got a motion event.\n UP buton pressed");
 	}
 
 	if (currentKeyStates[SDL_SCANCODE_S])
