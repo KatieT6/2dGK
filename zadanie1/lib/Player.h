@@ -10,7 +10,7 @@
 class Player
 {
 private:
-	VectorF2 velocity = { 0 , 0 };
+	
 	VectorF2 targetVelocity = { 0 , 0 };
 	VectorF2 screenPosition = { 0, 0 };
 	bool isWall = false;
@@ -23,26 +23,24 @@ private:
 	
 
 public:
+
 	VectorI2 position;
+	VectorI2 dimensions;
+	VectorF2 velocity = { 0 , 0 };
+	VectorI2 tempVelocity;
 
-#pragma region jumping
+	float radius;
 
-	bool isJumping = false;
-	bool isFalling = false;
-	bool isOnGround = true;
-	float jumpTime = 0;
-	float jumpTimeMax = 1.0;
-	float jumoVelocityX = 4;
-	float jumpHeight =  3;
-	float jumpDistance = 2;
-	float gravity = - 2 * jumpHeight * (jumoVelocityX * jumoVelocityX) / (jumpDistance * jumpDistance);
-	float jumpVelocity0 = (2 * jumpHeight * jumoVelocityX )/ jumpDistance;
-	int jumpcounter = 0;
+	float gravity;
+	bool jumpPressed = false;
+	float jumpTime;
+	int jumpCount;
 
-	/// szybkie spadanie
-	float gravity2 = gravity * 1.5;
+	float MAX_H = 32 * 2;
+	float MAX_DISTANCE = 32 * 6;
+	float V_0;
 
-#pragma endregion 
+	static const int VEL = 2;
 
 	bool isCircle = false;
 	Player();
@@ -70,16 +68,16 @@ public:
 	//bool checkCircleRectCollision(Player* circle, Wall* rect, bool collide);
 	//void CircleRectCollision(Wall* otherPlayer);
 	void handleWallCollision();
+	bool checkWallCollisions();
 	float clamp(float value, float min, float max);
 	void separate(Player otherPlayer);
 	void separate(Player* player, float tileX, float tileY, VectorF2 closestPoint);
 	//void separate(Player* player, Wall* otherWall, VectorF2 closestPoint);
-	bool checkCollisions();
 	bool CircleRectCollision(Wall* otherPlayer);
 	bool RectRectCollision(Wall* otherPlayer);
 	bool checkCollisions(std::vector<Wall*> collders);
 	void handleJumping();
-	void jump(Uint64 deltatime, Uint64 currenttime, Uint64 prevtime);
-
+	void jump(Uint64 deltatime, Uint64 currenttime, Uint64 prevtime, std::vector<Wall*> collders);
+	void calculateNewGravity();
 };
 

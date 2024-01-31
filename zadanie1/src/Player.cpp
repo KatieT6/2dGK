@@ -1,4 +1,4 @@
-#include "../lib/Player.h"
+Ôªø#include "../lib/Player.h"
 #include <math.h>
 #include <cmath>
 #include <iostream>
@@ -27,6 +27,10 @@ Player::Player(int width, int height, VectorI2 pos)
 	screenPosition = { 0, 0 };
 	width = width;
 	height = height;
+	calculateNewGravity();
+	tempVelocity.x = 0;
+	tempVelocity.y = 0;
+
 }
 
 Player::~Player()
@@ -93,11 +97,11 @@ void Player::updatePlayerPosition()
 
 bool Player::checkCollisions(std::vector<Wall*> collders) {
 	for (int i = 0; i < collders.size(); i++) {
-			if (this->isCircle) {
-				 return RectRectCollision(collders.at(i));
+			if (!this->isCircle) {
+				 //return this->RectRectCollision(collders.at(i));
 			}
 			else {
-				return CircleRectCollision(collders.at(i));
+				return this->CircleRectCollision(collders.at(i));
 			}
 	
 	}
@@ -136,17 +140,10 @@ bool Player::RectRectCollision(Wall* otherPlayer) {
 		float top = position.y + 2 * height - otherPlayer->position.y;
 		float bottom = otherPlayer->position.y + 2 * otherPlayer->height - position.y;
 
-		
+
 		if (left > 0 && right > 0 && top > 0 && bottom > 0) {
-			//printf(" Rect Rect Collision -- player 2 \n");
-			//if (otherPlayer->isPoint)
-			//{
-			//	printf("!!	P2   got point      !!\n");
-			//	return true;
-			//}
-			//printf("x, y: (%d, %d)f\n\n", this->position.x, this->position.y);
-			//printf("wall (%d, %d)\n\n", otherPlayer->getPosition().x, otherPlayer->getPosition().y);
-			// Znajdü wektor separacji
+			printf(" Rect Rect Collision -- player 2 \n");
+			
 			VectorI2 separation;
 
 			if (left < right) {
@@ -165,15 +162,13 @@ bool Player::RectRectCollision(Wall* otherPlayer) {
 
 			if (abs(separation.x) < abs(separation.y)) {
 				position.x += separation.x;
-				velocity.x = 0; 
+				velocity.x = 0;
 			}
 			else {
 				position.y += separation.y;
-				velocity.y = 0; 
+				velocity.y = 0;
 			}
-			this->isOnGround = true;
 			return true;
-
 		}
 
 	}
@@ -184,23 +179,18 @@ bool Player::RectRectCollision(Wall* otherPlayer) {
 
 bool Player::CircleRectCollision(Wall* otherPlayer)
 {
-
-	// Znajdü najbliøszy punkt na prostokπcie do úrodka ko≥a
-	float closestX = fmaxf(otherPlayer->position.x  +16, fminf(this->position.x, otherPlayer->position.x + 16 + otherPlayer->width));
+	// Znajd≈∏ najbli¬øszy punkt na prostok¬πcie do ≈ìrodka ko¬≥a
+	float closestX = fmaxf(otherPlayer->position.x + 16, fminf(this->position.x, otherPlayer->position.x + 16 + otherPlayer->width));
 	float closestY = fmaxf(otherPlayer->position.y + 16, fminf(this->position.y, otherPlayer->position.y + 16 + otherPlayer->height));
 
-	// Oblicz odleg≥oúÊ miÍdzy úrodkiem ko≥a a najbliøszym punktem na prostokπcie
+	// Oblicz odleg¬≥o≈ì√¶ mi√™dzy ≈ìrodkiem ko¬≥a a najbli¬øszym punktem na prostok¬πcie
 	float distance = sqrtf(powf(this->position.x - closestX, 2) + powf(this->position.y - closestY, 2));
 
-	// Sprawdü, czy odleg≥oúÊ jest mniejsza niø promieÒ ko≥a
+	// Sprawd≈∏, czy odleg¬≥o≈ì√¶ jest mniejsza ni¬ø promie√± ko¬≥a
 	if (distance < this->r) {
-		//printf("Collision detected!\n");
-		//if (otherPlayer->isPoint)
-		//{
-		//	printf("!!	P1   got point      !!\n");
-		//	return true;
-		//}
-		// Jeúli chcesz dokonaÊ separacji obiektÛw, odsuÒ ko≥o od prostokπta
+		printf("Collision detected!\n");
+
+		// Je≈ìli chcesz dokona√¶ separacji obiekt√≥w, odsu√± ko¬≥o od prostok¬πta
 		if (true) {
 			float overlap = this->r - distance;
 			float directionX = (this->position.x - closestX) / distance;
@@ -209,9 +199,6 @@ bool Player::CircleRectCollision(Wall* otherPlayer)
 			this->position.x += overlap * directionX;
 			this->position.y += overlap * directionY;
 		}
-		this->isOnGround = true;
-		this->velocity.y = 0;
-		this->isJumping = false;
 		return true;
 	}
 	return false;
@@ -247,6 +234,36 @@ void Player::handleWallCollision()
 		}
 
 	}
+}
+
+bool Player::checkWallCollisions()
+{
+	if (position.x + radius > WIDTH) {
+		if (velocity.x > 0) {
+			velocity.x *= -1;
+		}
+		return true;
+	}
+	else if (position.x - radius < 0) {
+		if (velocity.x < 0) {
+			velocity.x *= -1;
+		}
+		return true;
+	}
+	if (position.y + radius > HEIGHT) {
+		if (velocity.y > 0) {
+			velocity.y *= -1;
+		}
+		return true;
+	}
+	else if (position.y - radius < 0) {
+		if (velocity.y < 0) {
+			velocity.y *= -1;
+		}
+		return true;
+	}
+
+	return false;
 }
 
 float Player::clamp(float value, float min, float max)
@@ -311,34 +328,52 @@ void Player:: separate(Player* player, float tileX, float tileY, VectorF2 closes
 
 void Player::handleJumping()
 {
-	if (jumpcounter < 2)
-	{
-		isJumping = true;
-		isOnGround = false;
-		jumpcounter++;
+	if (jumpCount < 2) {
+		printf("Jumping!\n");
+		jumpPressed = true;
+		jumpCount++;
 		jumpTime = 0;
-		velocity.y = jumpVelocity0;
+		velocity.y = V_0 * 0.5f;
 	}
 }
 
-void Player::jump(Uint64 deltatime, Uint64 currenttime, Uint64 prevtime)
+void Player::jump(Uint64 deltatime, Uint64 currenttime, Uint64 prevtime, std::vector<Wall*> collders)
 {
-	float velPart = this->velocity.y * deltatime;
-	float accPart = gravity * deltatime * deltatime * 0.5;
+	float sY = this->position.y;
 
-	this->position.y += velPart + accPart;
+	float velocityPart = this->velocity.y * deltatime;
+	float accelerationPart = 0.5 * gravity * deltatime * deltatime;
+	float difference = accelerationPart + velocityPart;
 
-	if ((!isJumping || jumpTimeMax > jumpTime) || isOnGround)
-	{
+
+	this->tempVelocity.y = difference;
+	this->position.y += difference;
+	if (!jumpPressed || jumpTime > 10) {
 		this->velocity.y += gravity * deltatime;
-		printf("vel: %f\n", this->velocity.y);
-		printf("pos: %d\n", this->position.y);
-		printf("grav: %f\n", this->gravity);
 	}
-	else
-	{
-		jumpTime += deltatime;
+	else {
+		jumpTime++;
 	}
+
+
+	if (checkWallCollisions()) {
+		printf("Collision detected!\n");
+		this->velocity.y = 0;
+		this->position.y = sY - 16;
+		jumpTime = 0;
+		jumpPressed = false;
+		if ((position.y + radius > HEIGHT)) // tu powinno byc jeszcze sprawdzenie czy nie dotyka klocka jakiego≈ì od g√≥ry
+			jumpCount = 0;
+	}
+}
+
+void Player::calculateNewGravity()
+{
+	V_0 = -(2 * MAX_H * VEL / MAX_DISTANCE);
+	gravity = (2 * MAX_H * VEL * VEL) /
+		(MAX_DISTANCE * MAX_DISTANCE);
+
+	printf("Nowe wartosci:\n - grawitacja: %f,\n - V_0: %f,\n - maksymalna wysokosc: %f,\n - maksymalna odleglosc pozioma: %f\n\n", gravity, V_0, MAX_H, MAX_DISTANCE);
 }
 
 

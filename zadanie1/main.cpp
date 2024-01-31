@@ -83,6 +83,7 @@ void updateCirclesPlayers(std::vector<Player>* player);
 void drawCirclesPlayer(std::vector<Player>* player);
 
 void handleWallColission(Player* player);
+void handleJumping(Player* player, float& jumpTime, float jumpTimeMax, float jumpVelocityX, float& jumpVelocity0, float jumpHeight, float jumpDistance, float gravity, int& jumpcounter);
 
 VectorI2 randPlayerPosition(std::vector<VectorI2> positions);
 
@@ -90,10 +91,10 @@ std::vector<Player> createPlayers(int quantity, int r, bool isCircle);
 void drawPlayerWithTextures(SDL_Rect* camera, SDL_Texture* playerTexture, Player* p);
 void drawCirclesPlayer(std::vector<Player>* player);
 
-void updateCamera(SDL_Rect* camera, Player* p1, Player* p2, int* targetX, int *targetY);
+void updateCamera(SDL_Rect* camera, Player* p1, int* targetX, int *targetY);
 void cameraInBounds(SDL_Rect* camera);
 void playerInBounds(Player* player);
-void playerInCameraWidth(SDL_Rect* camera, Player* player1, Player* player2);
+void playerInCameraWidth(SDL_Rect* camera, Player* player1);
 
 void DrawDottedLine(SDL_Renderer* renderer, int x0, int y0, int x1, int y1);
 bool checkIfTreasureIsInCamera(SDL_Rect* camera, VectorI2* treasure);
@@ -101,12 +102,36 @@ VectorI2 calculateMidPoint(Player* p1, Player* p2);
 
 void close();
 
-void update(int player1Velocity, int player2Velocity, Player* p1, Player* p2);
-void updatePlayersCollision(Player* player1, Player* player2, std::vector<Wall*> walls);
+void update(int player1Velocity, int player2Velocity, Player* p1);
+void updatePlayersCollision(Player* player1, std::vector<Wall*> walls);
 float smoothingMotion(float targetSpeed, float smooth, float velocity);
 
 
+bool isJumping = false;
+bool isOnGround = false;
 
+#pragma region jumping
+float jumpTime1 = 0;
+float jumpTimeMax1 = 50.0f;
+float jumpVelocityX1 = 0.5f;
+float jumpHeight1 = 200.0f;
+float jumpDistance1 = 200.0f;
+
+float jumpTime2 = 0;
+float jumpTimeMax2 = 50.0f;
+float jumpVelocityX2 = 0.5f;
+float jumpHeight2 = 200.0f;
+float jumpDistance2 = 200.0f;
+
+float gravity1 = 2 * jumpHeight1 * (jumpVelocityX1 * jumpVelocityX1) / (jumpDistance1 * jumpDistance1);
+float jumpVelocity01 = -2 * (jumpHeight1 * jumpVelocityX1) / jumpDistance1;
+int jumpcounter1 = 0;
+
+float gravity2 = 2 * jumpHeight2 * (jumpVelocityX2 * jumpVelocityX2) / (jumpDistance2 * jumpDistance2);
+float jumpVelocity02 = -2 * (jumpHeight2 * jumpVelocityX2) / jumpDistance2;
+int jumpcounter2 = 0;
+
+#pragma endregion
 
 Uint64 currentTime = 0;
 Uint64 lastTime = 0;
@@ -130,7 +155,7 @@ int main(int argc, char* args[])
 		SDL_Event e;
 		Uint8 alpha = 128;
 		
-		Uint64 desiredFrameTime = 3;
+		Uint64 desiredFrameTime = 17;
 
 		
 		VectorI2 v = { SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };
@@ -279,17 +304,22 @@ int main(int argc, char* args[])
 
 			first = false;
 
-
-			updatePlayersCollision(&player1, &player2, ListWalls);
-			player1.jump(deltaTime, currentTime, lastTime);
-			player2.jump(deltaTime, currentTime, lastTime);
+			//player1.jump(deltaTime, currentTime, lastTime);
+			//player2.jump(deltaTime, currentTime, lastTime);
+			update(velocityOfPlayer, velocityOfPlayer, &player1);
+			updatePlayersCollision(&player1, ListWalls);
+			// Update players' jump
+			//player1.jump(deltaTime, currentTime, lastTime, ListWalls);
+			//player2.jump(deltaTime, currentTime, lastTime, ListWalls);
+			printf("Player 1 position: %d, %d \n", player1.getPosition().x, player1.getPosition().y);
+			//printf("Player 2 position: %d, %d \n", player2.getPosition().x, player2.getPosition().y);
 			//update(velocityOfPlayer, velocityOfPlayer, &player1, &player2);
 			drawPlayerWithTextures(camera, playerTexture, &player1);
-			drawPlayerWithTextures(camera, playerAmongusTexture, &player2);
-			updateCamera(camera, &player1, &player2, &targetX, &targetY);
+			//drawPlayerWithTextures(camera, playerAmongusTexture, &player2);
+			updateCamera(camera, &player1, &targetX, &targetY);
 			
 
-			playerInCameraWidth(camera, &player1, &player2);
+			playerInCameraWidth(camera, &player1);
 			playerInBounds(&player1);
 			playerInBounds(&player2);
 			
@@ -373,8 +403,8 @@ bool init()
 }
 
 
-void updatePlayersCollision(Player* player1, Player* player2, std::vector<Wall*> walls) {
-	update(velocityOfPlayer, velocityOfPlayer, player1, player2);
+void updatePlayersCollision(Player* player1, std::vector<Wall*> walls) {
+	
 
 	for (int j = 0; j < walls.size(); j++)
 	{
@@ -385,18 +415,10 @@ void updatePlayersCollision(Player* player1, Player* player2, std::vector<Wall*>
 		//player1->RectRectCollision(walls.at(j));
 		if (player1->CircleRectCollision(walls.at(j)))
 		{
+			player1->position.y -= int((player1->tempVelocity.y));
+			player1->velocity.y = 0;
 			score.addPointTo(1);
 			score.nextMap();
-			player1->isOnGround = true;
-			player1->isJumping = false;
-			return;
-		}
-		if (player2->RectRectCollision(walls.at(j)))
-		{
-			score.addPointTo(2);
-			score.nextMap();
-			player2->isOnGround = true;
-			player2->isJumping = false;
 			return;
 		}
 	}
@@ -545,42 +567,45 @@ void updateRect(Player* p1) {
 
 #pragma region old code
 //Position locking
-void updateCamera(SDL_Rect* camera, Player* p1, Player* p2, int* targetX,int *targetY) {
+void updateCamera(SDL_Rect* camera, Player* p1, int* targetX,int *targetY) {
 
 	//printf("Camera (x, y): %d %d\n", camera->x, camera->y);
 	//printf("Player1 (x, y): %d %d\n", p1->getPosition().x, p1->getPosition().y);
 	//printf("Player2 (x, y): %d %d\n", p2->getPosition().x, p2->getPosition().y);
-	float offsetRight1 = camera->x + SCREEN_WIDTH / 2 - SCREEN_WIDTH / 3 - p1->getPosition().x - 16;
-	float offsetLeft1 = camera->x + SCREEN_WIDTH / 2 + SCREEN_WIDTH / 3 - p1->getPosition().x - 16;
-	float offsetRight2 = camera->x + SCREEN_WIDTH / 2 - SCREEN_WIDTH / 3 - p2->getPosition().x - 16;
-	float offsetLeft2 = camera->x + SCREEN_WIDTH / 2 + SCREEN_WIDTH / 3 - p2->getPosition().x - 16;
+	//float offsetRight1 = camera->x + SCREEN_WIDTH / 2 - SCREEN_WIDTH / 3 - p1->getPosition().x - 16;
+	//float offsetLeft1 = camera->x + SCREEN_WIDTH / 2 + SCREEN_WIDTH / 3 - p1->getPosition().x - 16;
+	//float offsetRight2 = camera->x + SCREEN_WIDTH / 2 - SCREEN_WIDTH / 3 - p2->getPosition().x - 16;
+	//float offsetLeft2 = camera->x + SCREEN_WIDTH / 2 + SCREEN_WIDTH / 3 - p2->getPosition().x - 16;
 
-	float offsetUp1 = camera->y + SCREEN_HEIGHT / 2 - SCREEN_HEIGHT / 3 - p1->getPosition().y - 16;
-	float offsetDown1 = camera->y + SCREEN_HEIGHT / 2 + SCREEN_HEIGHT / 3 - p1->getPosition().y - 16;
-	float offsetUp2 = camera->y + SCREEN_HEIGHT / 2 - SCREEN_HEIGHT / 3 - p2->getPosition().y - 16;
-	float offsetDown2 = camera->y + SCREEN_HEIGHT / 2 + SCREEN_HEIGHT / 3 - p2->getPosition().y - 16;
+	//float offsetUp1 = camera->y + SCREEN_HEIGHT / 2 - SCREEN_HEIGHT / 3 - p1->getPosition().y - 16;
+	//float offsetDown1 = camera->y + SCREEN_HEIGHT / 2 + SCREEN_HEIGHT / 3 - p1->getPosition().y - 16;
+	//float offsetUp2 = camera->y + SCREEN_HEIGHT / 2 - SCREEN_HEIGHT / 3 - p2->getPosition().y - 16;
+	//float offsetDown2 = camera->y + SCREEN_HEIGHT / 2 + SCREEN_HEIGHT / 3 - p2->getPosition().y - 16;
 
-	float deltaX = p1->getPosition().x - p2->getPosition().x;
-	float deltaY = p1->getPosition().y - p2->getPosition().y;
-	float distance = sqrt(deltaX * deltaX + deltaY * deltaY);
+	//float deltaX = p1->getPosition().x - p2->getPosition().x;
+	//float deltaY = p1->getPosition().y - p2->getPosition().y;
+	//float distance = sqrt(deltaX * deltaX + deltaY * deltaY);
 
-	//printf("distance x: %f\n", distance);
+	////printf("distance x: %f\n", distance);
 
 
-	if (abs(offsetRight1) >= snappingCamera->x || abs(offsetRight2) >= snappingCamera->x) {
-		*targetX = p1->getPosition().x - SCREEN_WIDTH / 2 + 16 - deltaX / 2;
+	//if (abs(offsetRight1) >= snappingCamera->x || abs(offsetRight2) >= snappingCamera->x) {
+	//	*targetX = p1->getPosition().x - SCREEN_WIDTH / 2 + 16 - deltaX / 2;
 
-	}
-	else if (abs(offsetLeft1) >= snappingCamera->x || abs(offsetLeft2) >= snappingCamera->x) {
-		*targetX = p1->getPosition().x - SCREEN_WIDTH / 2 + 16 - deltaX / 2;
-	}
+	//}
+	//else if (abs(offsetLeft1) >= snappingCamera->x || abs(offsetLeft2) >= snappingCamera->x) {
+	//	*targetX = p1->getPosition().x - SCREEN_WIDTH / 2 + 16 - deltaX / 2;
+	//}
 
-	if (abs(offsetDown1) >= snappingCamera->y || abs(offsetDown2) >= snappingCamera->y) {
-		*targetY = p1->getPosition().y - SCREEN_HEIGHT / 2 + 16 - deltaY / 2;
-	}
-	else if (abs(offsetUp1) >= snappingCamera->y || abs(offsetUp2) >= snappingCamera->y) {
-		*targetY = p1->getPosition().y - SCREEN_HEIGHT / 2 + 16 - deltaY / 2;
-	}
+	//if (abs(offsetDown1) >= snappingCamera->y || abs(offsetDown2) >= snappingCamera->y) {
+	//	*targetY = p1->getPosition().y - SCREEN_HEIGHT / 2 + 16 - deltaY / 2;
+	//}
+	//else if (abs(offsetUp1) >= snappingCamera->y || abs(offsetUp2) >= snappingCamera->y) {
+	//	*targetY = p1->getPosition().y - SCREEN_HEIGHT / 2 + 16 - deltaY / 2;
+	//}
+
+	*targetX = p1->getPosition().x - SCREEN_WIDTH / 2 + 16;
+	*targetY = p1->getPosition().y - SCREEN_HEIGHT / 2 + 16;
 
 	float smooth = 0.92f;
 	camera->x = *targetX * (1.0f - smooth) + camera->x * smooth;
@@ -637,22 +662,25 @@ void playerInBounds(Player* player) {
 }
 
 
-void update(int player1Velocity, int player2Velocity, Player* p1, Player* p2)
+void update(int player1Velocity, int player2Velocity, Player* p1)
 {
 	const Uint8* currentKeyStates = SDL_GetKeyboardState(NULL);
 	VectorI2 position;
+	
 
 	if (currentKeyStates[SDL_SCANCODE_UP])
 	{
 		p1->handleJumping();
-		printf("We got a motion event.\n UP buton pressed");
+		/*position = { p1->getPosition().x, p1->getPosition().y - player1Velocity };
+		p1->setPosition(position);*/
+		printf("We got a motion event.     UP buton pressed \n");
 	}
 
 	if (currentKeyStates[SDL_SCANCODE_DOWN])
 	{
 		position = { p1->getPosition().x, p1->getPosition().y + player1Velocity };
 		p1->setPosition(position);
-		//printf("We got a motion event.\n DOWN buton pressed");
+		printf("We got a motion event.\n DOWN buton pressed");
 
 	}
 
@@ -672,41 +700,45 @@ void update(int player1Velocity, int player2Velocity, Player* p1, Player* p2)
 
 	}
 
-	if (currentKeyStates[SDL_SCANCODE_W])
-	{
-		p2->handleJumping();
-		printf("We got a motion event.\n UP buton pressed");
-	}
+	//if (currentKeyStates[SDL_SCANCODE_W])
+	//{
+	//	p2->handleJumping();
+	//	/*position = { p2->getPosition().x , p2->getPosition().y - player2Velocity };
+	//	p2->setPosition(position);*/
+	//	printf("We got a motion event.\n UP buton pressed");
+	//}
 
-	if (currentKeyStates[SDL_SCANCODE_S])
-	{
-		position = { p2->getPosition().x , p2->getPosition().y + player2Velocity };
-		p2->setPosition(position);
-		//printf("We got a motion event.\n DOWN buton pressed");
+	//if (currentKeyStates[SDL_SCANCODE_S])
+	//{
+	//	position = { p2->getPosition().x , p2->getPosition().y + player2Velocity };
+	//	p2->setPosition(position);
+	//	//printf("We got a motion event.\n DOWN buton pressed");
 
-	}
+	//}
 
-	if (currentKeyStates[SDL_SCANCODE_A])
-	{
-		position = { p2->getPosition().x - player2Velocity, p2->getPosition().y };
-		p2->setPosition(position);
-		//printf("We got a motion event.\n LEFT buton pressed");
+	//if (currentKeyStates[SDL_SCANCODE_A])
+	//{
+	//	position = { p2->getPosition().x - player2Velocity, p2->getPosition().y };
+	//	p2->setPosition(position);
+	//	//printf("We got a motion event.\n LEFT buton pressed");
 
-	}
+	//}
 
-	if (currentKeyStates[SDL_SCANCODE_D])
-	{
-		position = { p2->getPosition().x + player2Velocity, p2->getPosition().y };
-		p2->setPosition(position);
-		//printf("We got a motion event.\n RIGHT buton pressed");
+	//if (currentKeyStates[SDL_SCANCODE_D])
+	//{
+	//	position = { p2->getPosition().x + player2Velocity, p2->getPosition().y };
+	//	p2->setPosition(position);
+	//	//printf("We got a motion event.\n RIGHT buton pressed");
 
-	}
+	//}
 
 
 
 }
 
+#pragma region jumpingFunctions
 
+#pragma endregion
 
 float smoothingMotion(float targetSpeed, float smooth, float velocity) {
 	return targetSpeed * (1 - smooth) + velocity * smooth;
@@ -718,7 +750,7 @@ void drawPlayerWithTextures(SDL_Rect* camera, SDL_Texture* playerTexture, Player
 }
 
 
-void playerInCameraWidth(SDL_Rect* camera, Player* player1, Player* player2) {
+void playerInCameraWidth(SDL_Rect* camera, Player* player1) {
 	if (player1->getPosition().x >= camera->x + SCREEN_WIDTH - 32) {
 		VectorI2 v = { camera->x + SCREEN_WIDTH - 32, player1->getPosition().y };
 		player1->setPosition(v);
@@ -728,14 +760,14 @@ void playerInCameraWidth(SDL_Rect* camera, Player* player1, Player* player2) {
 		player1->setPosition(v);
 	}
 
-	if (player2->getPosition().x >= camera->x + SCREEN_WIDTH - 32) {
+	/*if (player2->getPosition().x >= camera->x + SCREEN_WIDTH - 32) {
 		VectorI2 v = { camera->x + SCREEN_WIDTH - 32, player2->getPosition().y };
 		player2->setPosition(v);
 	}
 	if (player2->getPosition().x <= camera->x + 8 ) {
 		VectorI2 v = { camera->x + 8, player2->getPosition().y };
 		player2->setPosition(v);
-	}
+	}*/
 	if (player1->getPosition().y >= camera->y + SCREEN_HEIGHT - 32) {
 				VectorI2 v = { player1->getPosition().x, camera->y + SCREEN_HEIGHT - 32 };
 		player1->setPosition(v);
@@ -745,14 +777,14 @@ void playerInCameraWidth(SDL_Rect* camera, Player* player1, Player* player2) {
 		player1->setPosition(v);
 	}
 
-	if (player2->getPosition().y >= camera->y + SCREEN_HEIGHT - 32) {
+	/*if (player2->getPosition().y >= camera->y + SCREEN_HEIGHT - 32) {
 		VectorI2 v = { player2->getPosition().x, camera->y + SCREEN_HEIGHT - 32 };
 		player2->setPosition(v);
 	}
 	if (player2->getPosition().y <= camera->y + 32) {
 		VectorI2 v = { player2->getPosition().x, camera->y + 8 };
 		player2->setPosition(v);
-	}
+	}*/
 
 }
 
