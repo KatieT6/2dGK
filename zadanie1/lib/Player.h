@@ -11,7 +11,6 @@ class Player
 {
 private:
 	
-	VectorF2 targetVelocity = { 0 , 0 };
 	VectorF2 screenPosition = { 0, 0 };
 	bool isWall = false;
 	int r = 0;
@@ -23,6 +22,7 @@ private:
 	
 
 public:
+	VectorF2 targetVelocity = { 0 , 0 };
 
 	VectorI2 position;
 	VectorI2 dimensions;
@@ -35,12 +35,14 @@ public:
 	bool jumpPressed = false;
 	float jumpTime;
 	int jumpCount;
+	int maxJumpTime;
 
-	float MAX_H = 32 * 2;
-	float MAX_DISTANCE = 32 * 6;
+	float MAX_H = 200;
+	float MAX_DISTANCE = 200;
 	float V_0;
+	float scale = 1.2;
 
-	static const int VEL = 2;
+	static const int VEL = 1.5;
 
 	bool isCircle = false;
 	Player();
@@ -62,6 +64,8 @@ public:
 	void setVelocity(VectorF2& vel);
 	void setTargetVelocity(VectorF2 &vel);
 	void setRadius(int radius);
+	void setMaxHeight(float height);
+	void setMaxDistance(float distance);
 
 	void updatePlayerPosition();  
 	void CircleCircleCollision(Player otherPlayer);
@@ -77,7 +81,7 @@ public:
 	bool RectRectCollision(Wall* otherPlayer);
 	bool checkCollisions(std::vector<Wall*> collders);
 	void handleJumping();
-	void jump(Uint64 deltatime, Uint64 currenttime, Uint64 prevtime, std::vector<Wall*> collders);
+	void jump(Uint64 deltatime, Uint64 currenttime, Uint64 prevtime);
 	void calculateNewGravity();
 };
 

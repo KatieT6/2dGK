@@ -30,6 +30,9 @@ Player::Player(int width, int height, VectorI2 pos)
 	calculateNewGravity();
 	tempVelocity.x = 0;
 	tempVelocity.y = 0;
+	jumpCount = 0;
+	jumpTime = 0;
+	maxJumpTime = 50;
 
 }
 
@@ -95,15 +98,18 @@ void Player::updatePlayerPosition()
 	position.y += velocity.y;
 }
 
+void Player::setMaxDistance(float distance)
+{
+		MAX_DISTANCE = distance;
+		calculateNewGravity();
+}
+
 bool Player::checkCollisions(std::vector<Wall*> collders) {
 	for (int i = 0; i < collders.size(); i++) {
-			if (!this->isCircle) {
-				 //return this->RectRectCollision(collders.at(i));
-			}
-			else {
+		printf("Checking collision with wall %d\n\n", i);
+		printf("position: %d, %d\n", position.x, position.y);
 				return this->CircleRectCollision(collders.at(i));
-			}
-	
+
 	}
 }
 
@@ -188,7 +194,6 @@ bool Player::CircleRectCollision(Wall* otherPlayer)
 
 	// SprawdŸ, czy odleg³oœæ jest mniejsza ni¿ promieñ ko³a
 	if (distance < this->r) {
-		printf("Collision detected!\n");
 
 		// Jeœli chcesz dokonaæ separacji obiektów, odsuñ ko³o od prostok¹ta
 		if (true) {
@@ -238,21 +243,24 @@ void Player::handleWallCollision()
 
 bool Player::checkWallCollisions()
 {
-	if (position.x + radius > WIDTH) {
-		if (velocity.x > 0) {
-			velocity.x *= -1;
+	if (position.x + radius >= WIDTH) {
+		if (velocity.x >= 0) {
+			VectorF2 v = { 0, velocity.y };
+			velocity = v;
 		}
 		return true;
 	}
-	else if (position.x - radius < 0) {
-		if (velocity.x < 0) {
-			velocity.x *= -1;
+	else if (position.x - radius <= 0) {
+		if (velocity.x <= 0) {
+			VectorF2 v = { 0, velocity.y };
+			velocity = v;
 		}
 		return true;
 	}
 	if (position.y + radius > HEIGHT) {
-		if (velocity.y > 0) {
-			velocity.y *= -1;
+		if (velocity.y >= 0) {
+			VectorF2 v = { velocity.x, -velocity.y };
+			velocity = v;
 		}
 		return true;
 	}
@@ -329,15 +337,14 @@ void Player:: separate(Player* player, float tileX, float tileY, VectorF2 closes
 void Player::handleJumping()
 {
 	if (jumpCount < 2) {
-		printf("Jumping!\n");
+		printf("jump count: %d\n", jumpCount);
 		jumpPressed = true;
-		jumpCount++;
 		jumpTime = 0;
 		velocity.y = V_0 * 0.5f;
 	}
 }
 
-void Player::jump(Uint64 deltatime, Uint64 currenttime, Uint64 prevtime, std::vector<Wall*> collders)
+void Player::jump(Uint64 deltatime, Uint64 currenttime, Uint64 prevtime)
 {
 	float sY = this->position.y;
 
@@ -348,23 +355,35 @@ void Player::jump(Uint64 deltatime, Uint64 currenttime, Uint64 prevtime, std::ve
 
 	this->tempVelocity.y = difference;
 	this->position.y += difference;
-	if (!jumpPressed || jumpTime > 10) {
+	/*if (jumpPressed && jumpTime >= maxJumpTime / 2.0f) {
+		this->velocity.y += gravity * scale * deltatime;		
+
+	}*/
+	if (!jumpPressed || jumpTime > maxJumpTime) {
 		this->velocity.y += gravity * deltatime;
 	}
+
 	else {
 		jumpTime++;
 	}
 
 
 	if (checkWallCollisions()) {
-		printf("Collision detected!\n");
+		//printf("Collision detected!\n");
 		this->velocity.y = 0;
-		this->position.y = sY - 16;
+		this->position.y = sY;
 		jumpTime = 0;
 		jumpPressed = false;
 		if ((position.y + radius > HEIGHT)) // tu powinno byc jeszcze sprawdzenie czy nie dotyka klocka jakiegoœ od góry
+			
 			jumpCount = 0;
 	}
+}
+
+void Player::setMaxHeight(float height)
+{
+	MAX_H = height;
+	calculateNewGravity();
 }
 
 void Player::calculateNewGravity()
@@ -373,7 +392,7 @@ void Player::calculateNewGravity()
 	gravity = (2 * MAX_H * VEL * VEL) /
 		(MAX_DISTANCE * MAX_DISTANCE);
 
-	printf("Nowe wartosci:\n - grawitacja: %f,\n - V_0: %f,\n - maksymalna wysokosc: %f,\n - maksymalna odleglosc pozioma: %f\n\n", gravity, V_0, MAX_H, MAX_DISTANCE);
+	printf("Grawitacja: %f,\n - v0: %f,\n - maksymalna wysokosc: %f,\n - maksymalna odleglosc pozioma: %f\n\n", gravity, V_0, MAX_H, MAX_DISTANCE);
 }
 
 
